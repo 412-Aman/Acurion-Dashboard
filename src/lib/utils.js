@@ -19,10 +19,10 @@ export function formatDateTime(isoString) {
 }
 
 export function riskColor(score) {
-  if (score > 0.85) return 'accent-rose';
-  if (score > 0.6)  return 'accent-gold';
-  if (score > 0.35) return 'accent-cobalt';
-  return 'accent-teal';
+  if (score > 0.85) return 'text-crit';
+  if (score > 0.6)  return 'text-danger';
+  if (score > 0.35) return 'text-warn';
+  return 'text-ok';
 }
 
 export function severityBadgeClass(severity) {

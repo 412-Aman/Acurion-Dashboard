@@ -15,30 +15,31 @@ const main = renderLayout({
 });
 
 main.innerHTML = `
-  <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-    <div class="lg:col-span-3 card !p-0 overflow-hidden relative">
-      <div class="absolute top-4 left-4 z-10 flex flex-wrap gap-2">
-        <button class="btn-ghost text-xs" data-filter="all">All edges</button>
-        <button class="btn-ghost text-xs" data-filter="transaction">IBM AML</button>
-        <button class="btn-ghost text-xs" data-filter="suspicious">PaySim Fraud</button>
-        <button class="btn-ghost text-xs" data-filter="flagged">Flagged only</button>
+  <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;">
+    <div class="card" style="padding:0;overflow:hidden;position:relative;">
+      <div style="position:absolute;top:12px;left:12px;z-index:10;display:flex;flex-wrap:wrap;gap:6px;">
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="all">All</button>
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="transaction">IBM AML</button>
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="suspicious">PaySim</button>
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="flagged">Flagged</button>
       </div>
-      <div class="absolute top-4 right-4 z-10 flex gap-2">
-        <button id="zoom-in" class="btn-ghost text-xs !px-2.5">+</button>
-        <button id="zoom-out" class="btn-ghost text-xs !px-2.5">−</button>
-        <button id="fit" class="btn-ghost text-xs">Fit</button>
+      <div style="position:absolute;top:12px;right:12px;z-index:10;display:flex;gap:6px;">
+        <button id="zoom-in" class="btn-ghost" style="font-size:13px;padding:4px 10px;font-weight:600;">+</button>
+        <button id="zoom-out" class="btn-ghost" style="font-size:13px;padding:4px 10px;font-weight:600;">−</button>
+        <button id="fit" class="btn-ghost" style="font-size:11px;padding:4px 10px;">Fit</button>
       </div>
-      <div id="cy" class="w-full h-[600px]"></div>
-      <div class="absolute bottom-4 left-4 z-10 glass-panel px-3 py-2 text-xs text-text-faint flex items-center gap-4">
-        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-text-faint inline-block"></span> Low risk</span>
-        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-text-dim inline-block"></span> Medium</span>
-        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-text inline-block"></span> High / Critical</span>
+      <div id="cy" style="width:100%;height:560px;"></div>
+      <div style="position:absolute;bottom:12px;left:12px;z-index:10;display:flex;align-items:center;gap:14px;padding:6px 12px;background:rgba(24,22,20,0.85);border:1px solid var(--color-border);border-radius:8px;backdrop-filter:blur(8px);font-size:11px;color:var(--color-text-faint);">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#5c5650;display:inline-block;"></span>Low</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#d4a84b;display:inline-block;"></span>Medium</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#d46b5a;display:inline-block;"></span>High</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#d4f040;display:inline-block;"></span>Critical</span>
       </div>
     </div>
 
-    <div class="card" id="node-detail">
-      <div class="text-center py-16 text-text-faint text-sm">
-        Click a node to inspect account relationships.
+    <div class="card" id="node-detail" style="overflow-y:auto;max-height:600px;">
+      <div style="text-align:center;padding:48px 0;color:var(--color-text-faint);font-size:13px;">
+        Click a node to inspect.
       </div>
     </div>
   </div>
@@ -47,8 +48,19 @@ main.innerHTML = `
 let cy;
 let alertsByAccount = {};
 
-const RISK_COLOR = { low: '#6b6b6b', medium: '#a3a3a3', high: '#f5f5f5', critical: '#ffffff' };
-const RISK_SIZE = { low: 28, medium: 34, high: 42, critical: 48 };
+const RISK_COLOR = {
+  low:      '#3d3935',
+  medium:   '#6b5e1a',
+  high:     '#6b2d1e',
+  critical: '#d4f040',
+};
+const RISK_BORDER = {
+  low:      '#5c5650',
+  medium:   '#d4a84b',
+  high:     '#d46b5a',
+  critical: '#d4f040',
+};
+const RISK_SIZE = { low: 26, medium: 32, high: 38, critical: 44 };
 
 async function init() {
   const [graphData, alerts] = await Promise.all([getGraphData(), getAlerts()]);
@@ -62,34 +74,34 @@ async function init() {
         selector: 'node',
         style: {
           'background-color': (n) => RISK_COLOR[n.data('risk')] || RISK_COLOR.low,
-          'width': (n) => RISK_SIZE[n.data('risk')] || RISK_SIZE.low,
+          'width':  (n) => RISK_SIZE[n.data('risk')] || RISK_SIZE.low,
           'height': (n) => RISK_SIZE[n.data('risk')] || RISK_SIZE.low,
           'label': 'data(label)',
-          'color': '#a3a3a3',
-          'font-size': '9px',
+          'color': '#a89e94',
+          'font-size': '8px',
           'font-family': 'JetBrains Mono, monospace',
           'text-valign': 'bottom',
-          'text-margin-y': 6,
-          'border-width': 2,
-          'border-color': '#0a0a0a',
+          'text-margin-y': 5,
+          'border-width': 1.5,
+          'border-color': (n) => RISK_BORDER[n.data('risk')] || RISK_BORDER.low,
         },
       },
       {
         selector: 'edge[type = "transaction"]',
         style: {
-          'width': 1.5,
-          'line-color': '#3a3a3a',
-          'target-arrow-color': '#3a3a3a',
+          'width': 1,
+          'line-color': '#3d3935',
+          'target-arrow-color': '#3d3935',
           'target-arrow-shape': 'triangle',
           'curve-style': 'bezier',
-          'arrow-scale': 0.8,
+          'arrow-scale': 0.7,
         },
       },
       {
         selector: 'edge[type = "shared_device"]',
         style: {
-          'width': 1.5,
-          'line-color': '#6b6b6b',
+          'width': 1,
+          'line-color': '#2e2b28',
           'line-style': 'dashed',
           'curve-style': 'bezier',
           'target-arrow-shape': 'none',
@@ -98,8 +110,8 @@ async function init() {
       {
         selector: 'edge[type = "shared_ip"]',
         style: {
-          'width': 1.5,
-          'line-color': '#6b6b6b',
+          'width': 1,
+          'line-color': '#2e2b28',
           'line-style': 'dotted',
           'curve-style': 'bezier',
           'target-arrow-shape': 'none',
@@ -108,43 +120,52 @@ async function init() {
       {
         selector: 'edge[type = "suspicious"]',
         style: {
-          'width': 2,
-          'line-color': '#a3a3a3',
+          'width': 1.5,
+          'line-color': '#5c3a2e',
           'line-style': 'dashed',
-          'target-arrow-color': '#a3a3a3',
+          'target-arrow-color': '#5c3a2e',
           'target-arrow-shape': 'triangle',
           'curve-style': 'bezier',
-          'arrow-scale': 0.8,
+          'arrow-scale': 0.7,
         },
       },
       {
         selector: 'edge[flagged = "true"], edge[?flagged]',
         style: {
-          'line-color': '#f5f5f5',
-          'target-arrow-color': '#f5f5f5',
-          'opacity': 0.8,
+          'line-color': '#d4a84b',
+          'target-arrow-color': '#d4a84b',
+          'opacity': 0.85,
         },
       },
       {
         selector: '.faded',
-        style: { 'opacity': 0.1 },
+        style: { 'opacity': 0.08 },
       },
       {
         selector: '.highlighted',
         style: {
-          'border-width': 3,
-          'border-color': '#ffffff',
+          'border-width': 2.5,
+          'border-color': '#d4f040',
         },
       },
     ],
     layout: {
-      name: 'cola',
-      animate: true,
+      name: 'cose',
+      animate: false,
       randomize: true,
-      maxSimulationTime: 1500,
-      nodeSpacing: 18,
+      nodeRepulsion: () => 8000,
+      idealEdgeLength: () => 80,
+      edgeElasticity: () => 100,
+      nestingFactor: 5,
+      gravity: 80,
+      numIter: 1000,
+      initialTemp: 200,
+      coolingFactor: 0.95,
+      minTemp: 1,
+      fit: true,
+      padding: 40,
     },
-    minZoom: 0.3,
+    minZoom: 0.25,
     maxZoom: 3,
   });
 
@@ -206,53 +227,51 @@ function renderNodeDetail(node) {
 
   const panel = document.getElementById('node-detail');
   panel.innerHTML = `
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <h3 class="font-semibold font-mono text-sm">${id}</h3>
-        <p class="text-xs text-text-faint mt-0.5">${neighbors.length} connected account${neighbors.length === 1 ? '' : 's'}</p>
+    <div style="margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">
+        <h3 style="font-family:var(--font-mono);font-size:12px;color:var(--color-text);word-break:break-all;">${id}</h3>
+        <span class="badge ${severityBadgeClass(risk)}" style="flex-shrink:0;">${risk}</span>
       </div>
-      <span class="badge ${severityBadgeClass(risk)}">${risk}</span>
+      <p style="font-size:11px;color:var(--color-text-faint);">${neighbors.length} connected account${neighbors.length === 1 ? '' : 's'}</p>
     </div>
 
-    <div class="grid grid-cols-2 gap-3 mb-4 text-xs">
-      <div class="bg-surface-2 rounded-lg p-3">
-        <div class="text-text-faint mb-1">Transaction edges</div>
-        <div class="font-mono text-lg">${txEdges.length}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+      <div style="background:var(--color-surface-2);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--color-text-faint);margin-bottom:4px;">Tx edges</div>
+        <div style="font-family:var(--font-mono);font-size:18px;color:var(--color-text);">${txEdges.length}</div>
       </div>
-      <div class="bg-surface-2 rounded-lg p-3">
-        <div class="text-text-faint mb-1">Fraud edges</div>
-        <div class="font-mono text-lg">${fraudEdges.length}</div>
+      <div style="background:var(--color-surface-2);border-radius:8px;padding:10px;">
+        <div style="font-size:10px;color:var(--color-text-faint);margin-bottom:4px;">Fraud edges</div>
+        <div style="font-family:var(--font-mono);font-size:18px;color:var(--color-text);">${fraudEdges.length}</div>
       </div>
     </div>
 
     ${(bankName || entityName || cluster || sourceDs) ? `
-      <div class="bg-surface-2 rounded-lg p-3 mb-4 text-xs space-y-1.5">
-        <div class="text-text-faint font-medium mb-2">Account Info</div>
-        ${bankName   ? `<div class="flex justify-between"><span class="text-text-faint">Bank</span><span class="font-mono">${bankName}</span></div>` : ''}
-        ${entityName ? `<div class="flex justify-between"><span class="text-text-faint">Entity</span><span class="font-mono text-xs">${entityName}</span></div>` : ''}
-        ${cluster    ? `<div class="flex justify-between"><span class="text-text-faint">Bank ID</span><span class="font-mono">${cluster}</span></div>` : ''}
-        ${sourceDs   ? `<div class="flex justify-between"><span class="text-text-faint">Dataset</span><span class="font-mono">${sourceDs}</span></div>` : ''}
+      <div style="background:var(--color-surface-2);border-radius:8px;padding:10px;margin-bottom:16px;">
+        <div style="font-size:10px;color:var(--color-text-faint);font-weight:500;margin-bottom:8px;">Account Info</div>
+        ${bankName   ? `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span style="color:var(--color-text-faint);">Bank</span><span style="font-family:var(--font-mono);color:var(--color-text-dim);">${bankName}</span></div>` : ''}
+        ${entityName ? `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span style="color:var(--color-text-faint);">Entity</span><span style="font-family:var(--font-mono);color:var(--color-text-dim);font-size:10px;">${entityName}</span></div>` : ''}
+        ${cluster    ? `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span style="color:var(--color-text-faint);">Bank ID</span><span style="font-family:var(--font-mono);color:var(--color-text-dim);">${cluster}</span></div>` : ''}
+        ${sourceDs   ? `<div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:var(--color-text-faint);">Dataset</span><span style="font-family:var(--font-mono);color:var(--color-text-dim);">${sourceDs}</span></div>` : ''}
       </div>
     ` : ''}
 
     ${alert ? `
-      <div class="mb-4">
-        <h4 class="text-sm font-medium mb-2">Active Alert</h4>
-        <div class="bg-surface-2 rounded-lg p-3 text-xs space-y-1">
-          <div class="flex justify-between"><span class="text-text-faint">Alert ID</span><span class="font-mono">${alert.id}</span></div>
-          <div class="flex justify-between"><span class="text-text-faint">Risk Score</span><span class="font-mono">${alert.riskScore.toFixed(2)}</span></div>
-          <div class="flex justify-between"><span class="text-text-faint">Decision</span><span class="font-mono">${alert.decision}</span></div>
+      <div style="margin-bottom:16px;">
+        <h4 style="font-size:12px;font-weight:500;color:var(--color-text);margin-bottom:8px;">Active Alert</h4>
+        <div style="background:var(--color-surface-2);border-radius:8px;padding:10px;font-size:11px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--color-text-faint);">ID</span><span style="font-family:var(--font-mono);">${alert.id}</span></div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--color-text-faint);">Risk</span><span style="font-family:var(--font-mono);">${alert.riskScore.toFixed(2)}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span style="color:var(--color-text-faint);">Decision</span><span style="font-family:var(--font-mono);">${alert.decision}</span></div>
         </div>
-        <a href="alerts.html" class="btn-primary w-full mt-3 text-xs">View Full Alert</a>
+        <a href="alerts.html" class="btn-primary" style="width:100%;margin-top:10px;font-size:12px;">View Alert →</a>
       </div>
-    ` : `
-      <div class="text-xs text-text-faint mb-4">No active alerts for this account.</div>
-    `}
+    ` : `<p style="font-size:11px;color:var(--color-text-faint);margin-bottom:16px;">No active alerts.</p>`}
 
     <div>
-      <h4 class="text-sm font-medium mb-2">Connected Accounts</h4>
-      <div class="flex flex-wrap gap-1.5">
-        ${neighbors.map((n) => `<span class="badge border-border text-text-dim bg-surface-2 font-mono text-xs">${n.id()}</span>`).join('')}
+      <h4 style="font-size:12px;font-weight:500;color:var(--color-text);margin-bottom:8px;">Connected Accounts</h4>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        ${neighbors.map((n) => `<span style="font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:99px;background:var(--color-surface-2);color:var(--color-text-dim);border:1px solid var(--color-border);">${n.id()}</span>`).join('')}
       </div>
     </div>
   `;

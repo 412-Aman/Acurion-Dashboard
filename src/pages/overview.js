@@ -128,29 +128,19 @@ async function renderRiskChart() {
     <svg viewBox="0 0 ${w} ${h}" class="w-full h-full" preserveAspectRatio="none">
       <defs>
         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"  stop-color="#c9a84c" stop-opacity="0.30"/>
-          <stop offset="50%" stop-color="#3d79f0" stop-opacity="0.10"/>
-          <stop offset="100%" stop-color="#1de9b6" stop-opacity="0"/>
+          <stop offset="0%"  stop-color="#d4f040" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#d4f040" stop-opacity="0"/>
         </linearGradient>
-        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stop-color="#1de9b6"/>
-          <stop offset="50%"  stop-color="#c9a84c"/>
-          <stop offset="100%" stop-color="#e056a0"/>
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-          <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
       </defs>
       ${[0, 0.25, 0.5, 0.75, 1].map((t) => {
         const y = pad + t * (h - pad * 2);
-        return `<line x1="${pad}" y1="${y}" x2="${w - pad}" y2="${y}" stroke="rgba(30,35,64,0.9)" stroke-width="1" stroke-dasharray="4 4"/>`;
+        return `<line x1="${pad}" y1="${y}" x2="${w - pad}" y2="${y}" stroke="#2e2b28" stroke-width="1" stroke-dasharray="4 4"/>`;
       }).join('')}
       <path id="area-path" d="${areaPath}" fill="url(#areaGrad)" opacity="0"/>
-      <path id="line-path" d="${linePath}" fill="none" stroke="url(#lineGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
-      ${points.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#070810" stroke="#c9a84c" stroke-width="2" class="risk-pt" data-i="${i}" filter="url(#glow)"/>`).join('')}
+      <path id="line-path" d="${linePath}" fill="none" stroke="#d4f040" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      ${points.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="#111010" stroke="#d4f040" stroke-width="1.5" class="risk-pt" data-i="${i}"/>`).join('')}
     </svg>
-    <div class="flex justify-between text-xs mt-2 font-mono" style="color:var(--color-text-faint);">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-faint);margin-top:8px;font-family:var(--font-mono);">
       <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
     </div>
   `;
@@ -173,21 +163,21 @@ async function renderSeverityChart() {
   const el = document.getElementById('severity-chart');
   const max = Math.max(...data.map((d) => d.count), 1);
   const SEVERITY_COLORS = {
-    low:      { bar: 'rgba(29,233,182,0.7)',  glow: 'rgba(29,233,182,0.3)' },
-    medium:   { bar: 'rgba(201,168,76,0.8)',  glow: 'rgba(201,168,76,0.3)' },
-    high:     { bar: 'rgba(224,86,160,0.8)',  glow: 'rgba(224,86,160,0.3)' },
-    critical: { bar: 'rgba(255,77,109,0.85)', glow: 'rgba(255,77,109,0.3)' },
+    low:      '#6fc98a',
+    medium:   '#d4a84b',
+    high:     '#d46b5a',
+    critical: '#c94060',
   };
   el.innerHTML = data.map((d) => {
-    const c = SEVERITY_COLORS[d.severity] || { bar: 'rgba(158,175,201,0.6)', glow: 'rgba(158,175,201,0.2)' };
+    const color = SEVERITY_COLORS[d.severity] || '#5c5650';
     return `
     <div>
-      <div class="flex justify-between text-sm mb-1.5">
-        <span class="capitalize" style="color:var(--color-text-dim);">${d.severity}</span>
-        <span class="font-mono" style="color:var(--color-text-faint);">${d.count}</span>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
+        <span style="color:var(--color-text-dim);text-transform:capitalize;">${d.severity}</span>
+        <span style="font-family:var(--font-mono);color:var(--color-text-faint);">${d.count}</span>
       </div>
-      <div class="h-2 rounded-full overflow-hidden" style="background:rgba(19,22,41,0.8);">
-        <div class="h-full rounded-full severity-bar" data-width="${(d.count / max) * 100}" style="width:0%;background:${c.bar};box-shadow:0 0 8px 1px ${c.glow};"></div>
+      <div style="height:4px;border-radius:99px;background:var(--color-surface-3);overflow:hidden;">
+        <div class="severity-bar" data-width="${(d.count / max) * 100}" style="width:0%;height:100%;border-radius:99px;background:${color};"></div>
       </div>
     </div>
   `}).join('');

@@ -11,47 +11,33 @@ onAuthStateChanged(auth, (user) => {
 const app = document.getElementById('app');
 
 app.innerHTML = `
-  <div class="min-h-screen flex items-center justify-center p-6">
-    <div class="w-full max-w-sm">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--color-bg);">
+    <div style="width:100%;max-width:360px;">
 
-      <div class="flex flex-col items-center mb-8 opacity-0" id="logo-block">
-        <div class="w-12 h-12 rounded-xl bg-text flex items-center justify-center mb-3">
-          <span class="text-bg font-bold text-lg">A</span>
+      <div id="logo-block" style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;opacity:0;">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--color-accent);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+          <span style="font-weight:700;font-size:15px;color:#111010;">A</span>
         </div>
-        <div class="font-semibold text-lg tracking-tight">Acurion</div>
-        <div class="text-xs text-text-faint mt-0.5">AML Intelligence Platform</div>
+        <div style="font-weight:600;font-size:16px;letter-spacing:-0.02em;color:var(--color-text);">Acurion</div>
+        <div style="font-size:12px;color:var(--color-text-faint);margin-top:2px;">AML Intelligence Platform</div>
       </div>
 
-      <div class="glass-panel p-6 opacity-0" id="form-card">
-        <h1 class="text-lg font-semibold mb-1">Sign in</h1>
-        <p class="text-sm text-text-faint mb-6">Access the compliance dashboard</p>
+      <div id="form-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:14px;padding:24px;opacity:0;">
+        <h1 style="font-size:15px;font-weight:600;color:var(--color-text);margin-bottom:4px;">Sign in</h1>
+        <p style="font-size:13px;color:var(--color-text-faint);margin-bottom:20px;">Access the compliance dashboard</p>
 
-        <div id="error-msg" class="hidden mb-4 px-3 py-2.5 rounded-lg bg-surface-2 text-xs border border-red-900/40 text-red-400"></div>
+        <div id="error-msg" style="display:none;margin-bottom:14px;padding:10px 12px;border-radius:8px;background:rgba(201,64,96,0.08);border:1px solid rgba(201,64,96,0.25);font-size:12px;color:#c94060;"></div>
 
-        <form id="login-form" class="space-y-4">
+        <form id="login-form" style="display:flex;flex-direction:column;gap:14px;">
           <div>
-            <label class="block text-xs text-text-faint mb-1.5" for="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              class="input w-full"
-              placeholder="admin@acurion.ai"
-              autocomplete="email"
-              required
-            />
+            <label style="display:block;font-size:12px;color:var(--color-text-faint);margin-bottom:6px;" for="email">Email</label>
+            <input type="email" id="email" class="input" style="width:100%;" placeholder="admin@acurion.ai" autocomplete="email" required />
           </div>
           <div>
-            <label class="block text-xs text-text-faint mb-1.5" for="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              class="input w-full"
-              placeholder="••••••••"
-              autocomplete="current-password"
-              required
-            />
+            <label style="display:block;font-size:12px;color:var(--color-text-faint);margin-bottom:6px;" for="password">Password</label>
+            <input type="password" id="password" class="input" style="width:100%;" placeholder="••••••••" autocomplete="current-password" required />
           </div>
-          <button type="submit" id="submit-btn" class="btn-primary w-full">Sign in</button>
+          <button type="submit" id="submit-btn" class="btn-primary" style="width:100%;margin-top:4px;">Sign in</button>
         </form>
       </div>
 
@@ -84,13 +70,13 @@ const submitBtn = document.getElementById('submit-btn');
 
 function showError(msg) {
   errorEl.textContent = msg;
-  errorEl.classList.remove('hidden');
+  errorEl.style.display = 'block';
   animate(errorEl, { opacity: [0, 1], translateY: [-4, 0], duration: 300, ease: 'outQuad' });
 }
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  errorEl.classList.add('hidden');
+  errorEl.style.display = 'none';
 
   const email    = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
