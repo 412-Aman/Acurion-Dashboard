@@ -1,6 +1,7 @@
 import '../styles/main.css';
 import { animate, stagger } from 'animejs';
 import { renderLayout } from '../components/layout.js';
+import { mountGatewayFlow } from '../islands/ambient.tsx';
 import {
   getOverviewStats,
   getAlerts,
@@ -17,6 +18,7 @@ const main = renderLayout({
 });
 
 main.innerHTML = `
+<section class="intelligence-banner"><div class="banner-flow" id="overview-flow" aria-hidden="true"></div><div class="banner-copy"><span class="section-kicker">ACURION INTELLIGENCE</span><h2>Follow the flow. Find the signal.</h2><p>Transaction activity, customer context and investigation decisions.</p></div><a class="btn-ghost" href="compliance.html?view=cases">Open investigations ↗</a></section>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="stat-cards"></div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
@@ -51,11 +53,13 @@ main.innerHTML = `
   </div>
 `;
 
+mountGatewayFlow(document.getElementById('overview-flow'), true);
+
 const STAT_DEFS = [
-  { key: 'systemThroughputTps', label: 'Throughput', suffix: ' tx/s', icon: iconActivity() },
-  { key: 'totalAlerts', label: 'Active Alerts', icon: iconAlert() },
+  { key: 'totalTransactions24h', label: 'Loaded transactions', icon: iconActivity() },
+  { key: 'totalAlerts', label: 'Loaded alerts', icon: iconAlert() },
   { key: 'blockedTransactions', label: 'Blocked', icon: iconBlock() },
-  { key: 'detectionRate', label: 'Detection Rate', format: (v) => `${Math.round(v * 100)}%`, icon: iconTarget() },
+  { key: 'flaggedTransactions', label: 'Flagged transactions', icon: iconTarget() },
 ];
 
 function iconActivity() {
@@ -77,38 +81,17 @@ async function renderStats() {
   el.innerHTML = STAT_DEFS.map((def) => {
     const raw = stats[def.key];
     return `
-      <div class="stat-card opacity-0">
+      <div class="stat-card">
         <div class="flex items-center justify-between mb-3">
           <span class="text-text-faint">${def.icon}</span>
         </div>
-        <div class="text-2xl font-semibold tracking-tight font-mono" data-target="${raw}" data-format="${def.format ? 'pct' : 'plain'}" data-suffix="${def.suffix || ''}">0</div>
+        <div class="text-2xl font-semibold tracking-tight font-mono" data-target="${raw}" data-format="${def.format ? 'pct' : 'plain'}" data-suffix="${def.suffix || ''}">${Number(raw).toLocaleString()}</div>
         <div class="text-sm text-text-faint mt-1">${def.label}</div>
       </div>
     `;
   }).join('');
 
-  animate('#stat-cards .stat-card', {
-    opacity: [0, 1],
-    translateY: [16, 0],
-    delay: stagger(80),
-    duration: 600,
-    ease: 'outQuad',
-  });
 
-  document.querySelectorAll('#stat-cards [data-target]').forEach((node) => {
-    const target = parseFloat(node.dataset.target);
-    const isPct = node.dataset.format === 'pct';
-    const suffix = node.dataset.suffix;
-    animate(node, {
-      duration: 1400,
-      ease: 'outExpo',
-      onUpdate: function (anim) {
-        const p = anim.progress / 100;
-        const current = target * p;
-        node.textContent = isPct ? `${Math.round(current * 100)}%` : `${Math.round(current)}${suffix}`;
-      },
-    });
-  });
 }
 
 async function renderRiskChart() {
@@ -128,17 +111,17 @@ async function renderRiskChart() {
     <svg viewBox="0 0 ${w} ${h}" class="w-full h-full" preserveAspectRatio="none">
       <defs>
         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%"  stop-color="#d4f040" stop-opacity="0.12"/>
-          <stop offset="100%" stop-color="#d4f040" stop-opacity="0"/>
+          <stop offset="0%"  stop-color="#eeeeee" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="#eeeeee" stop-opacity="0"/>
         </linearGradient>
       </defs>
       ${[0, 0.25, 0.5, 0.75, 1].map((t) => {
         const y = pad + t * (h - pad * 2);
-        return `<line x1="${pad}" y1="${y}" x2="${w - pad}" y2="${y}" stroke="#2e2b28" stroke-width="1" stroke-dasharray="4 4"/>`;
+        return `<line x1="${pad}" y1="${y}" x2="${w - pad}" y2="${y}" stroke="#303030" stroke-width="1" stroke-dasharray="4 4"/>`;
       }).join('')}
       <path id="area-path" d="${areaPath}" fill="url(#areaGrad)" opacity="0"/>
-      <path id="line-path" d="${linePath}" fill="none" stroke="#d4f040" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      ${points.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="#111010" stroke="#d4f040" stroke-width="1.5" class="risk-pt" data-i="${i}"/>`).join('')}
+      <path id="line-path" d="${linePath}" fill="none" stroke="#eeeeee" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      ${points.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="#101010" stroke="#eeeeee" stroke-width="1.5" class="risk-pt" data-i="${i}"/>`).join('')}
     </svg>
     <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-faint);margin-top:8px;font-family:var(--font-mono);">
       <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span>
@@ -163,13 +146,13 @@ async function renderSeverityChart() {
   const el = document.getElementById('severity-chart');
   const max = Math.max(...data.map((d) => d.count), 1);
   const SEVERITY_COLORS = {
-    low:      '#6fc98a',
-    medium:   '#d4a84b',
-    high:     '#d46b5a',
-    critical: '#c94060',
+    low:      '#b3b3b3',
+    medium:   '#c5c5c5',
+    high:     '#dedede',
+    critical: '#ffffff',
   };
   el.innerHTML = data.map((d) => {
-    const color = SEVERITY_COLORS[d.severity] || '#5c5650';
+    const color = SEVERITY_COLORS[d.severity] || '#929292';
     return `
     <div>
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;">
@@ -213,7 +196,7 @@ async function renderRecentAlerts() {
   `;
   const tbody = document.getElementById('alert-rows');
   tbody.innerHTML = recent.map((a) => `
-    <tr class="table-row opacity-0">
+    <tr class="table-row">
       <td class="py-3 font-mono text-text-dim">${a.id}</td>
       <td class="py-3 font-mono">${a.suspiciousAccount}</td>
       <td class="py-3 font-mono">${a.riskScore.toFixed(2)}</td>
@@ -223,13 +206,7 @@ async function renderRecentAlerts() {
     </tr>
   `).join('');
 
-  animate('#alert-rows .table-row', {
-    opacity: [0, 1],
-    translateX: [-8, 0],
-    delay: stagger(60),
-    duration: 400,
-    ease: 'outQuad',
-  });
+
 }
 
 function showLiveToast(alert) {

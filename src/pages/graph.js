@@ -15,7 +15,7 @@ const main = renderLayout({
 });
 
 main.innerHTML = `
-  <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;">
+  <div class="graph-layout" style="display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;">
     <div class="card" style="padding:0;overflow:hidden;position:relative;">
       <div style="position:absolute;top:12px;left:12px;z-index:10;display:flex;flex-wrap:wrap;gap:6px;">
         <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="all">All</button>
@@ -29,11 +29,11 @@ main.innerHTML = `
         <button id="fit" class="btn-ghost" style="font-size:11px;padding:4px 10px;">Fit</button>
       </div>
       <div id="cy" style="width:100%;height:560px;"></div>
-      <div style="position:absolute;bottom:12px;left:12px;z-index:10;display:flex;align-items:center;gap:14px;padding:6px 12px;background:rgba(24,22,20,0.85);border:1px solid var(--color-border);border-radius:8px;backdrop-filter:blur(8px);font-size:11px;color:var(--color-text-faint);">
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#5c5650;display:inline-block;"></span>Low</span>
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#d4a84b;display:inline-block;"></span>Medium</span>
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#d46b5a;display:inline-block;"></span>High</span>
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#d4f040;display:inline-block;"></span>Critical</span>
+      <div style="position:absolute;bottom:12px;left:12px;z-index:10;display:flex;align-items:center;gap:14px;padding:6px 12px;background:rgba(23,23,23,0.85);border:1px solid var(--color-border);border-radius:8px;backdrop-filter:blur(8px);font-size:11px;color:var(--color-text-faint);">
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#929292;display:inline-block;"></span>Low</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#c5c5c5;display:inline-block;"></span>Medium</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#dedede;display:inline-block;"></span>High</span>
+        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#eeeeee;display:inline-block;"></span>Critical</span>
       </div>
     </div>
 
@@ -49,16 +49,16 @@ let cy;
 let alertsByAccount = {};
 
 const RISK_COLOR = {
-  low:      '#3d3935',
-  medium:   '#6b5e1a',
-  high:     '#6b2d1e',
-  critical: '#d4f040',
+  low:      '#414141',
+  medium:   '#626262',
+  high:     '#858585',
+  critical: '#eeeeee',
 };
 const RISK_BORDER = {
-  low:      '#5c5650',
-  medium:   '#d4a84b',
-  high:     '#d46b5a',
-  critical: '#d4f040',
+  low:      '#929292',
+  medium:   '#c5c5c5',
+  high:     '#dedede',
+  critical: '#eeeeee',
 };
 const RISK_SIZE = { low: 26, medium: 32, high: 38, critical: 44 };
 
@@ -77,9 +77,9 @@ async function init() {
           'width':  (n) => RISK_SIZE[n.data('risk')] || RISK_SIZE.low,
           'height': (n) => RISK_SIZE[n.data('risk')] || RISK_SIZE.low,
           'label': 'data(label)',
-          'color': '#a89e94',
+          'color': '#b3b3b3',
           'font-size': '8px',
-          'font-family': 'JetBrains Mono, monospace',
+          'font-family': 'system-ui, sans-serif',
           'text-valign': 'bottom',
           'text-margin-y': 5,
           'border-width': 1.5,
@@ -90,8 +90,8 @@ async function init() {
         selector: 'edge[type = "transaction"]',
         style: {
           'width': 1,
-          'line-color': '#3d3935',
-          'target-arrow-color': '#3d3935',
+          'line-color': '#414141',
+          'target-arrow-color': '#414141',
           'target-arrow-shape': 'triangle',
           'curve-style': 'bezier',
           'arrow-scale': 0.7,
@@ -101,7 +101,7 @@ async function init() {
         selector: 'edge[type = "shared_device"]',
         style: {
           'width': 1,
-          'line-color': '#2e2b28',
+          'line-color': '#303030',
           'line-style': 'dashed',
           'curve-style': 'bezier',
           'target-arrow-shape': 'none',
@@ -111,7 +111,7 @@ async function init() {
         selector: 'edge[type = "shared_ip"]',
         style: {
           'width': 1,
-          'line-color': '#2e2b28',
+          'line-color': '#303030',
           'line-style': 'dotted',
           'curve-style': 'bezier',
           'target-arrow-shape': 'none',
@@ -121,9 +121,9 @@ async function init() {
         selector: 'edge[type = "suspicious"]',
         style: {
           'width': 1.5,
-          'line-color': '#5c3a2e',
+          'line-color': '#999999',
           'line-style': 'dashed',
-          'target-arrow-color': '#5c3a2e',
+          'target-arrow-color': '#999999',
           'target-arrow-shape': 'triangle',
           'curve-style': 'bezier',
           'arrow-scale': 0.7,
@@ -132,8 +132,8 @@ async function init() {
       {
         selector: 'edge[flagged = "true"], edge[?flagged]',
         style: {
-          'line-color': '#d4a84b',
-          'target-arrow-color': '#d4a84b',
+          'line-color': '#c5c5c5',
+          'target-arrow-color': '#c5c5c5',
           'opacity': 0.85,
         },
       },
@@ -145,7 +145,7 @@ async function init() {
         selector: '.highlighted',
         style: {
           'border-width': 2.5,
-          'border-color': '#d4f040',
+          'border-color': '#eeeeee',
         },
       },
     ],

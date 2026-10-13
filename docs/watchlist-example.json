@@ -1,0 +1,21 @@
+[
+  {
+    "id": "SYNTHETIC:001",
+    "name": "Demo Designated Entity",
+    "aliases": ["Demo Designated Co"],
+    "kind": "sanction",
+    "identifier": "DEMO-DESIGNATED-001",
+    "source": "Fictional sanctions example",
+    "sourceUrl": "",
+    "listedAt": "2026-10-01"
+  },
+  {
+    "id": "SYNTHETIC:002",
+    "name": "Demo Public Official",
+    "kind": "pep",
+    "dob": "1970-01-01",
+    "source": "Fictional public office record",
+    "sourceUrl": "",
+    "listedAt": "2026-10-01"
+  }
+]

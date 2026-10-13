@@ -2,6 +2,10 @@ import '../styles/main.css';
 import { animate, stagger } from 'animejs';
 import { signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../lib/firebase.js';
+import { icon } from '../components/icons.js';
+import { mountGatewayFlow } from '../islands/ambient.tsx';
+import { DEMO_MODE } from '../lib/config.js';
+if (DEMO_MODE) window.location.replace('index.html');
 
 // If a session already exists, skip the login screen immediately
 onAuthStateChanged(auth, (user) => {
@@ -11,48 +15,12 @@ onAuthStateChanged(auth, (user) => {
 const app = document.getElementById('app');
 
 app.innerHTML = `
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--color-bg);">
-    <div style="width:100%;max-width:360px;">
+  <div class="login-page"><div class="login-flow" id="login-flow" aria-hidden="true"></div><div class="login-grid" aria-hidden="true"></div><div class="login-chips" aria-hidden="true">${['Review customer KYC','Screen counterparties','Investigate unusual transfers','Review risk changes','Prepare STR draft','Maintain evidence records'].map((label,i) => `<div class="login-chip" style="left:${[8,68,15,75,5,65][i]}%;top:${[20,18,62,65,80,85][i]}%;animation-delay:-${i*3}s">${label}</div>`).join('')}</div>
+    <main class="login-card" id="form-card"><div class="login-icon">${icon('shield',20)}</div><h1>Acurion</h1><p>Sign in with your institution account to continue.</p><div id="error-msg" class="login-error" role="alert" style="display:none"></div><form id="login-form"><label class="field" for="email">Work email<input type="email" id="email" class="input" placeholder="analyst@institution.com" autocomplete="email" required></label><label class="field" for="password">Password<input type="password" id="password" class="input" placeholder="Enter your password" autocomplete="current-password" required></label><button type="submit" id="submit-btn" class="btn-primary">Continue to workspace</button></form><p class="login-footnote">Customer due diligence · Monitoring · Investigations</p></main>
+  </div>`;
 
-      <div id="logo-block" style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;opacity:0;">
-        <div style="width:36px;height:36px;border-radius:10px;background:var(--color-accent);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
-          <span style="font-weight:700;font-size:15px;color:#111010;">A</span>
-        </div>
-        <div style="font-weight:600;font-size:16px;letter-spacing:-0.02em;color:var(--color-text);">Acurion</div>
-        <div style="font-size:12px;color:var(--color-text-faint);margin-top:2px;">AML Intelligence Platform</div>
-      </div>
 
-      <div id="form-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:14px;padding:24px;opacity:0;">
-        <h1 style="font-size:15px;font-weight:600;color:var(--color-text);margin-bottom:4px;">Sign in</h1>
-        <p style="font-size:13px;color:var(--color-text-faint);margin-bottom:20px;">Access the compliance dashboard</p>
-
-        <div id="error-msg" style="display:none;margin-bottom:14px;padding:10px 12px;border-radius:8px;background:rgba(201,64,96,0.08);border:1px solid rgba(201,64,96,0.25);font-size:12px;color:#c94060;"></div>
-
-        <form id="login-form" style="display:flex;flex-direction:column;gap:14px;">
-          <div>
-            <label style="display:block;font-size:12px;color:var(--color-text-faint);margin-bottom:6px;" for="email">Email</label>
-            <input type="email" id="email" class="input" style="width:100%;" placeholder="admin@acurion.ai" autocomplete="email" required />
-          </div>
-          <div>
-            <label style="display:block;font-size:12px;color:var(--color-text-faint);margin-bottom:6px;" for="password">Password</label>
-            <input type="password" id="password" class="input" style="width:100%;" placeholder="••••••••" autocomplete="current-password" required />
-          </div>
-          <button type="submit" id="submit-btn" class="btn-primary" style="width:100%;margin-top:4px;">Sign in</button>
-        </form>
-      </div>
-
-    </div>
-  </div>
-`;
-
-// Entrance animation
-animate(['#logo-block', '#form-card'], {
-  opacity: [0, 1],
-  translateY: [16, 0],
-  delay: stagger(150),
-  duration: 600,
-  ease: 'outQuad',
-});
+mountGatewayFlow(document.getElementById('login-flow'));
 
 // ── Auth error messages ──────────────────────────────────────────────────────
 const AUTH_ERRORS = {
@@ -92,7 +60,7 @@ form.addEventListener('submit', async (e) => {
   } catch (err) {
     const msg = AUTH_ERRORS[err.code] || `Sign-in failed (${err.code})`;
     showError(msg);
-    submitBtn.textContent = 'Sign in';
+    submitBtn.textContent = 'Continue to workspace';
     submitBtn.disabled    = false;
   }
 });

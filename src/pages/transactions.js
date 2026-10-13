@@ -7,7 +7,7 @@ import { formatDateTime, formatCurrency, decisionBadgeClass } from '../lib/utils
 const main = renderLayout({
   active: 'transactions.html',
   pageTitle: 'Transactions',
-  pageSubtitle: 'Live transaction stream from Apache Kafka / Flink',
+  pageSubtitle: 'Transaction records from the configured data source',
 });
 
 main.innerHTML = `
@@ -64,7 +64,7 @@ function renderRows(list) {
   }
   empty.classList.add('hidden');
   tbody.innerHTML = list.map((t) => `
-    <tr class="table-row opacity-0">
+    <tr class="table-row">
       <td class="px-5 py-3 font-mono text-text-dim">${t.id}</td>
       <td class="px-5 py-3 font-mono">${t.fromAccount}</td>
       <td class="px-5 py-3 font-mono">${t.toAccount}</td>
@@ -76,12 +76,7 @@ function renderRows(list) {
     </tr>
   `).join('');
 
-  animate('#tx-rows .table-row', {
-    opacity: [0, 1],
-    duration: 250,
-    delay: stagger(20),
-    ease: 'outQuad',
-  });
+
 }
 
 function applyFilters() {

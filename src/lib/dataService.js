@@ -18,7 +18,8 @@ import {
   riskTimeline   as mockRiskTimeline,
 } from '../data/mockData.js';
 
-export const USE_FIREBASE = true;
+import { DEMO_MODE } from './config.js';
+export const USE_FIREBASE = !DEMO_MODE;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -254,12 +255,18 @@ export async function getOverviewStats() {
       avgRiskScore:          txs.length
         ? Math.round((txs.reduce((s, t) => s + t.riskScore, 0) / txs.length) * 100) / 100
         : 0,
-      detectionRate:         0.94,
-      systemThroughputTps:   8240,
+      detectionRate:         null,
+      systemThroughputTps:   null,
     };
   }
   await delay();
-  return mockOverviewStats;
+  return { ...mockOverviewStats,
+    totalTransactions24h: mockTransactions.length,
+    totalAlerts: mockAlerts.length,
+    openAlerts: mockAlerts.filter(a => a.status === 'open').length,
+    blockedTransactions: mockTransactions.filter(t => t.decision === 'block').length,
+    flaggedTransactions: mockTransactions.filter(t => t.decision === 'flag').length,
+  };
 }
 
 // ─── Severity Breakdown ──────────────────────────────────────────────────────

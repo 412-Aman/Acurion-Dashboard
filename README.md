@@ -1,46 +1,55 @@
-# Acurion Dashboard — Prototype
+# Acurion — AML intelligence prototype
 
-Monochrome, real-time AML intelligence dashboard. Vite + vanilla JS + Tailwind v4 + anime.js + Cytoscape.js. Mock data shaped to mirror the planned Firebase Realtime Database schema, so swapping to live Firebase later is a one-file change (`src/lib/dataService.js`).
+Vite + vanilla JS + Tailwind + Firebase + Cytoscape. A monochrome transaction dashboard and a new compliance operations sandbox.
 
-## Setup
+## Run
 
-```bash
-tar -xzf acurion-dashboard.tar.gz
-cd acurion-dashboard
+```sh
 npm install
 npm run dev
 ```
 
-Open the printed local URL (default http://localhost:5173).
+Default mode retains the existing Firebase sign-in and transaction feeds. For an offline demo without credentials:
 
-## Build for production
+```sh
+VITE_DEMO_MODE=true npm run dev
+```
 
-```bash
+Open `/compliance.html` for KYC profiles, dynamic rule scores, PEP relationships, sanctions/counterparty review, media evidence, transaction monitoring, investigations/STR drafts and retention policy. This workspace always uses fictional data in browser storage, including when legacy pages use Firebase. Do not enter real customer data or upload real documents.
+
+```sh
 npm run build
-npm run preview
+npm test
 ```
 
 ## Pages
 
-- `index.html` — Overview: live stat cards, risk trend chart, severity breakdown, recent alerts
-- `alerts.html` — Alerts table with filters + SHAP/GNN explanation detail panel
-- `transactions.html` — Full transaction stream with search/sort/filter
-- `graph.html` — Cytoscape.js multi-layer account graph (transactions, shared device, shared IP) with node inspection
-- `reports.html` — Audit log, CSV export, mock report/SAR generation
-- `login.html` — Standalone login (mocked auth, redirects to Overview)
+- `compliance.html`: connected compliance sandbox
+- `index.html`: transaction/alert overview
+- `alerts.html`: existing model alerts and explanations
+- `transactions.html`: existing transaction feed
+- `graph.html`: account relationships
+- `reports.html`: existing audit feed and summary exports
+- `login.html`: Firebase login
 
-## Switching to Firebase later
+The existing Firebase data service supports IBM AML, PaySim and IEEE CIS schemas. The reusable deterministic AML rules are in `src/lib/amlEngine.js`; sandbox storage is in `src/lib/complianceStore.js`. No model training was changed, no paid services were added, and no real payment block or regulatory filing is performed.
 
-Everything reads through `src/lib/dataService.js`. To go live:
+Read [the project review](docs/PROJECT_REVIEW.md) for the architecture, feature-by-feature production gaps, source research, cost constraints and ML teammate handoff. The sandbox is not secure institutional record storage and its activity log is not immutable.
 
-1. `npm install firebase` (already in package.json)
-2. Uncomment the Firebase init block at the top of `dataService.js` and fill in your config
-3. Set `USE_FIREBASE = true`
-4. Uncomment the `fetchFromFirebase` calls in each getter — no page-level code needs to change, since `src/data/mockData.js` is shaped exactly like the planned `/alerts`, `/transactions`, `/graphData`, `/auditLogs` schema from the team guidance doc
+## Sanctions list import
 
-## Notes
+See `docs/watchlist-example.json` for normalized fields. Import JSON through Screening, then run screening and review candidate identities. A no-match outcome does not certify a customer as clean.
 
-- All styling is in `src/styles/main.css` (Tailwind v4 `@theme` tokens — edit colors/fonts there)
-- Shared sidebar/topbar: `src/components/layout.js`
-- Mock data generator: `src/data/mockData.js` (regenerates random but consistent data on each load)
-- `subscribeToUpdates('alerts', cb)` simulates a live alert arriving every 15s via toast — replace with Firebase `onValue` listener for real-time
+Download official UN XML from the [UN consolidated list page](https://main.un.org/securitycouncil/en/content/un-sc-consolidated-list), then convert it without extra packages:
+
+```sh
+python3 scripts/convert-un-list.py /absolute/path/consolidated.xml /absolute/path/un-list.json
+```
+
+Automatic feed updates, live news ingestion, secure server storage and goAML submission still need server/institution integrations described in the review.
+
+## Integrated React components
+
+The app now also supports React 19 / TypeScript islands and a shadcn-compatible component folder. The redesigned navigation uses a workspace rail and contextual panel. Header notifications use Live Notification Feed; the login and overview use Gateway Flow; **Records → Working drafts** includes HoldButton and Shredder with recoverable disposal.
+
+See [component integration notes](docs/COMPONENT_INTEGRATION.md) for exact source provenance, dependencies, setup and validation.

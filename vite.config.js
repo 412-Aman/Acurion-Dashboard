@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
+  resolve: { alias: { "@": resolve(__dirname, "src") } },
   build: {
     rollupOptions: {
       input: {
@@ -11,6 +12,7 @@ export default defineConfig({
         graph: resolve(__dirname, 'graph.html'),
         reports: resolve(__dirname, 'reports.html'),
         login: resolve(__dirname, 'login.html'),
+        compliance: resolve(__dirname, 'compliance.html'),
       },
     },
   },
