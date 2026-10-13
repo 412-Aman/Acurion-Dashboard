@@ -118,7 +118,7 @@ function generateReport() {
 
   const content = `
       <div class="bg-surface-2 rounded-lg p-4 font-mono text-xs leading-relaxed text-text-dim">
-        <div class="text-text font-semibold mb-2">ACURION — LOADED AUDIT SUMMARY</div>
+        <div class="text-text font-semibold mb-2">ACURION - LOADED AUDIT SUMMARY</div>
         <div>Generated: ${now}</div>
         <div class="mt-2">Loaded audit entries: ${allLogs.length}</div>
         <div>Recorded block decisions: ${blocked}</div>

@@ -1,7 +1,7 @@
 // Firebase Initialization
 // -----------------------
 // Single source of truth for all Firebase service instances.
-// Import { auth, db, fs } from here — never call initializeApp more than once.
+// Import { auth, db, fs } from here - never call initializeApp more than once.
 
 import { initializeApp } from 'firebase/app';
 import { getAuth }        from 'firebase/auth';
@@ -26,5 +26,5 @@ export const auth = getAuth(app);
 export const db   = getDatabase(app);   // Realtime Database
 export const fs   = getFirestore(app);  // Firestore
 
-// Analytics — only initialise in browser environments that support it
+// Analytics - only initialise in browser environments that support it
 isSupported().then((ok) => { if (ok) getAnalytics(app); });

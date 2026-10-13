@@ -1,4 +1,4 @@
-# Acurion — AML intelligence prototype
+# Acurion - AML intelligence prototype
 
 Vite + vanilla JS + Tailwind + Firebase + Cytoscape. A monochrome transaction dashboard and a new compliance operations sandbox.
 

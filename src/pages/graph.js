@@ -11,7 +11,7 @@ cytoscape.use(cola);
 const main = renderLayout({
   active: 'graph.html',
   pageTitle: 'Graph Investigation',
-  pageSubtitle: 'Multi-layer account network — transactions, shared devices & IPs',
+  pageSubtitle: 'Multi-layer account network - transactions, shared devices & IPs',
 });
 
 main.innerHTML = `

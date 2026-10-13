@@ -29,7 +29,7 @@ const AUTH_ERRORS = {
   'auth/invalid-email':      'Please enter a valid email address.',
   'auth/invalid-credential': 'Invalid email or password.',
   'auth/too-many-requests':  'Too many failed attempts. Please wait and try again.',
-  'auth/network-request-failed': 'Network error — check your connection.',
+  'auth/network-request-failed': 'Network error - check your connection.',
 };
 
 const form      = document.getElementById('login-form');

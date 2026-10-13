@@ -76,21 +76,21 @@ function normalizeAlert(firebaseKey, data) {
     decision,
     severity,
 
-    // Account — alerts don't store this directly; use transactionId as stand-in
+    // Account - alerts don't store this directly; use transactionId as stand-in
     suspiciousAccount: data.accountId || data.account || data.from_account
                        || data.transactionId || firebaseKey,
 
-    // Status — not stored in Firebase; default to open
+    // Status - not stored in Firebase; default to open
     status: (data.status || 'open').toLowerCase(),
 
-    // Timestamp — not stored; fall back to epoch so formatDateTime shows something
+    // Timestamp - not stored; fall back to epoch so formatDateTime shows something
     timestamp: data.timestamp || data.createdAt || data.date || new Date().toISOString(),
 
     // Extra fields present in Firebase (used in detail panel)
     reason:        data.reason        || '',
     sourceDataset: data.sourceDataset || '',
 
-    // SHAP / GNN may not exist — provide safe defaults so detail panel renders
+    // SHAP / GNN may not exist - provide safe defaults so detail panel renders
     shapExplanation: data.shapExplanation || { topFeatures: [] },
     gnnExplanation: data.gnnExplanation || {
       summary:    data.reason || 'Transaction flagged by AI detection model.',
@@ -104,13 +104,13 @@ function normalizeAlert(firebaseKey, data) {
  * Maps a raw Firebase transaction to the shape expected by the UI.
  * Handles 3 confirmed schemas automatically by detecting sourceDataset:
  *
- *  IBM_AML  — fromAccount, toAccount, amountPaid, paymentFormat, paymentCurrency,
+ *  IBM_AML  - fromAccount, toAccount, amountPaid, paymentFormat, paymentCurrency,
  *              isLaundering, timestamp ("YYYY/MM/DD HH:mm")
  *
- *  PaySim   — senderAccount, receiverAccount, amount, transactionType,
+ *  PaySim   - senderAccount, receiverAccount, amount, transactionType,
  *              isFraud, isFlaggedFraud, step (hour offset from base date)
  *
- *  IEEE_CIS — payerEmailDomain, receiverEmailDomain, amount, cardType,
+ *  IEEE_CIS - payerEmailDomain, receiverEmailDomain, amount, cardType,
  *              cardCategory, isFraud, status ("FRAUD"/"NORMAL"),
  *              transactionTime (seconds since midnight)
  */
