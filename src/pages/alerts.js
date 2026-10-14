@@ -1,195 +1,52 @@
 import '../styles/main.css';
-import { animate, stagger } from 'animejs';
+import { revealRegion } from '../lib/motion.js';
 import { renderLayout } from '../components/layout.js';
 import { icon, escapeHTML as esc } from '../components/icons.js';
-import { getAlerts } from '../lib/dataService.js';
-import { formatDateTime, severityBadgeClass, decisionBadgeClass } from '../lib/utils.js';
-
-const main = renderLayout({
-  active: 'alerts.html',
-  pageTitle: 'Alerts',
-  pageSubtitle: 'AI-detected suspicious activity requiring review',
-});
-
-main.innerHTML = `
-  <nav class="workspace-tabs" aria-label="Alert views"><button class="selected" data-status="">${icon('alerts',14)}All alerts</button><button data-status="open">Open</button><button data-status="investigating">Investigating</button><button data-status="resolved">Resolved</button></nav>
-  <div class="flex flex-wrap items-center gap-3 mb-5">
-    <div class="view-switch" aria-label="Alert view mode"><button data-alert-view="list" class="selected" aria-pressed="true">${icon('list',14)}List</button><button data-alert-view="board" aria-pressed="false">${icon('board',14)}Board</button></div>
-    <input id="search" type="text" placeholder="Search alert ID or account..." class="input flex-1 min-w-[220px]" />
-    <select id="severity-filter" class="input">
-      <option value="">All severities</option>
-      <option value="critical">Critical</option>
-      <option value="high">High</option>
-      <option value="medium">Medium</option>
-      <option value="low">Low</option>
-    </select>
-    <select id="decision-filter" class="input">
-      <option value="">All decisions</option>
-      <option value="block">Block</option>
-      <option value="flag">Flag</option>
-    </select>
-  </div>
-
-  <div id="alert-board" class="board" hidden></div><div id="alert-list-layout">
-    <div class="card !p-0 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-text-faint text-xs uppercase tracking-wide bg-surface-2">
-              <th class="px-5 py-3 font-medium">Alert ID</th>
-              <th class="px-5 py-3 font-medium">Account</th>
-              <th class="px-5 py-3 font-medium">Risk</th>
-              <th class="px-5 py-3 font-medium">Severity</th>
-              <th class="px-5 py-3 font-medium">Decision</th>
-              <th class="px-5 py-3 font-medium">Status</th>
-              <th class="px-5 py-3 font-medium">Time</th>
-            </tr>
-          </thead>
-          <tbody id="alert-rows"></tbody>
-        </table>
-      </div>
-      <div id="empty-state" class="hidden text-center py-12 text-text-faint text-sm">No alerts match your filters.</div>
-    </div>
-
-  </div><p class="helper mt-3" id="alert-count"></p>
-  <dialog id="alert-dialog" class="detail-dialog" aria-label="Alert details"><form method="dialog"><button class="dialog-close icon-button" aria-label="Close alert details">${icon('close')}</button></form><div id="detail-panel"></div></dialog>
-`;
-
-let allAlerts = [];
-let alertView = 'list', statusFilter = '';
-const alertDialog = document.getElementById('alert-dialog');
-
-function renderRows(list) {
-  document.getElementById('alert-count').textContent = `${list.length} of ${allAlerts.length} alerts`;
-  document.getElementById('alert-list-layout').hidden = alertView === 'board';
-  document.getElementById('alert-board').hidden = alertView !== 'board';
-  document.getElementById('alert-board').innerHTML = ['open','investigating','resolved'].map(status => { const items = list.filter(a => a.status === status); return `<section class="board-column"><div class="board-header">${status.charAt(0).toUpperCase()+status.slice(1)}<small>${items.length}</small></div>${items.map(a => `<button class="board-card" data-alert-id="${esc(a.id)}"><p>${esc(a.id)}</p><small>${esc(a.suspiciousAccount)}</small><div class="card-meta"><span class="${severityBadgeClass(a.severity)}">${esc(a.severity)}</span><small>Risk ${a.riskScore.toFixed(2)}</small></div></button>`).join('') || '<div class="board-empty">No alerts in this stage</div>'}</section>`; }).join('');
-  document.querySelectorAll('[data-alert-id]').forEach(b => b.onclick = () => renderDetail(allAlerts.find(a => a.id === b.dataset.alertId)));
-  const tbody = document.getElementById('alert-rows');
-  const empty = document.getElementById('empty-state');
-  if (list.length === 0) {
-    tbody.innerHTML = '';
-    empty.classList.remove('hidden');
-    return;
-  }
-  empty.classList.add('hidden');
-  tbody.innerHTML = list.map((a) => `
-    <tr class="table-row cursor-pointer" data-id="${esc(a.id)}">
-      <td class="px-5 py-3 font-mono text-text-dim">${esc(a.id)}</td>
-      <td class="px-5 py-3 font-mono">${esc(a.suspiciousAccount)}</td>
-      <td class="px-5 py-3 font-mono">${a.riskScore.toFixed(2)}</td>
-      <td class="px-5 py-3"><span class="badge ${severityBadgeClass(a.severity)}">${esc(a.severity)}</span></td>
-      <td class="px-5 py-3"><span class="${decisionBadgeClass(a.decision)}">${esc(a.decision)}</span></td>
-      <td class="px-5 py-3 capitalize text-text-dim">${esc(a.status)}</td>
-      <td class="px-5 py-3 text-text-faint">${formatDateTime(a.timestamp)}</td>
-    </tr>
-  `).join('');
-
-
-
-  tbody.querySelectorAll('tr').forEach((row) => {
-    row.addEventListener('click', () => {
-      tbody.querySelectorAll('tr').forEach((r) => r.classList.remove('bg-surface-2'));
-      row.classList.add('bg-surface-2');
-      const alert = allAlerts.find((a) => a.id === row.dataset.id);
-      renderDetail(alert);
-    });
-  });
+import { getAlerts, getTransactions, saveAlertReview, clearDataCache } from '../lib/dataService.js';
+import { compareAlertPriority } from '../lib/dataContracts.js';
+import { createCaseFromAlert } from '../lib/caseWorkflow.js';
+import { DEMO_MODE } from '../lib/config.js';
+import { formatDateTime, formatRisk, severityBadgeClass, decisionBadgeClass } from '../lib/utils.js';
+import { renderLoadError, renderLoading } from '../components/dataFeedback.js';
+const main=renderLayout({active:'alerts.html',pageTitle:'Alerts',pageSubtitle:'Review risk signals, follow the evidence and record your decision'});
+const featureLabels={currency:'Currency',windowMinutes:'Window in minutes',outgoingCount:'Outgoing transfers',incomingCount:'Incoming transfers',totalOutflow:'Total outflow',totalInflow:'Total inflow',maximumAmount:'Largest outgoing amount',uniqueCounterparties:'Distinct counterparties'};
+const stages=[['','All alerts'],['open','Open'],['assigned','Assigned'],['investigating','Under review'],['escalated','Escalated'],['closed','Closed']];
+main.innerHTML=`<nav class="workspace-tabs" aria-label="Alert stages">${stages.map(([value,label])=>`<button data-status="${value}" class="${!value?'selected':''}">${label}</button>`).join('')}</nav><div class="filter-toolbar"><input id="search" class="input" placeholder="Find alert, account or investigator" aria-label="Search alerts"><select id="severity-filter" class="input" aria-label="Alert severity"><option value="">All severities</option>${['critical','high','medium','low','unknown'].map(s=>`<option>${s}</option>`).join('')}</select><select id="alert-sort" class="input" aria-label="Sort alerts"><option value="risk">Highest priority first</option><option value="time">Newest first</option></select><div class="view-switch" aria-label="Alert view"><button data-alert-view="list" class="selected">${icon('list',14)}List</button><button data-alert-view="board">${icon('board',14)}Board</button></div><button class="btn-ghost" id="reset-filters">Clear filters</button></div><div id="alert-results"></div><p class="helper" id="alert-count"></p><dialog id="alert-dialog" class="detail-dialog" aria-label="Alert details"><form method="dialog"><button class="dialog-close icon-button" aria-label="Close alert details">${icon('close')}</button></form><div id="detail-panel"></div></dialog>`;
+let allAlerts=[],statusFilter='',view='list',selectedId;
+const dialog=document.getElementById('alert-dialog'),panel=document.getElementById('detail-panel');
+const stage=status=>status==='resolved'?'closed':status;
+function renderRows() {
+  const query=document.getElementById('search').value.toLowerCase(),severity=document.getElementById('severity-filter').value;
+  const rows=allAlerts.filter(a=>(!statusFilter||stage(a.status)===statusFilter)&&(!severity||a.severity===severity)&&(!query||`${a.id} ${a.suspiciousAccount} ${a.owner}`.toLowerCase().includes(query))).sort((a,b)=>document.getElementById('alert-sort').value==='risk'?compareAlertPriority(a,b):(Date.parse(b.timestamp)||0)-(Date.parse(a.timestamp)||0));
+  document.getElementById('alert-count').textContent=`${rows.length} of ${allAlerts.length} loaded alerts · ${DEMO_MODE?'Fictional demo data':'Bounded Firebase sample'}`;
+  const result=document.getElementById('alert-results');
+  if(!rows.length){result.innerHTML=`<div class="card data-empty"><strong>${allAlerts.length?'No alerts match your filters':'No alerts in this source'}</strong><p>${allAlerts.length?'Clear filters to return to the full queue.':'Add records to the configured alert path, or explore the demo workspace.'}</p></div>`;return;}
+  result.innerHTML=view==='board'?`<div class="board">${stages.slice(1).map(([value,label])=>`<section class="board-column"><div class="board-header">${label}<small>${rows.filter(a=>stage(a.status)===value).length}</small></div>${rows.filter(a=>stage(a.status)===value).map(a=>`<button class="board-card" data-alert-id="${esc(a.id)}"><p>${esc(a.id)}</p><small>${esc(a.suspiciousAccount)}</small><div class="card-meta"><span class="${severityBadgeClass(a.severity)}">${esc(a.severity)}</span><small>${formatRisk(a.riskScore)}</small></div><small>${esc(a.owner||'Unassigned')}</small></button>`).join('')||'<div class="board-empty">No alerts in this stage</div>'}</section>`).join('')}</div>`:`<div class="card !p-0 table-wrap"><table class="workspace-table"><thead><tr><th>Alert / source</th><th>Account</th><th>Model / rule score</th><th>Severity</th><th>Recommendation</th><th>Review stage</th><th>Investigator</th><th>Time</th></tr></thead><tbody>${rows.map(a=>`<tr><td><button class="text-button font-mono" data-alert-id="${esc(a.id)}">${esc(a.id)}</button><small>${esc(a.sourceDataset||'Source not supplied')}</small></td><td>${esc(a.suspiciousAccount)}</td><td>${a.ruleScore==null?formatRisk(a.riskScore):`${a.ruleScore}/100 rule points`}</td><td><span class="${severityBadgeClass(a.severity)}">${esc(a.severity)}</span></td><td><span class="${decisionBadgeClass(a.decision)}">${esc(a.decision)}</span></td><td>${esc(stage(a.status))}</td><td>${esc(a.owner||'Unassigned')}</td><td>${formatDateTime(a.timestamp)}</td></tr>`).join('')}</tbody></table></div>`;
+  result.querySelectorAll('[data-alert-id]').forEach(button=>button.onclick=()=>renderDetail(allAlerts.find(a=>a.id===button.dataset.alertId)));
 }
-
 function renderDetail(alert) {
-  if (!alert) return;
-  const panel = document.getElementById('detail-panel');
-  if (!alertDialog.open) alertDialog.showModal();
-  panel.innerHTML = `
-    <div class="flex items-center justify-between mb-4 pr-8">
-      <div>
-        <h3 class="font-semibold font-mono">${esc(alert.id)}</h3>
-        <p class="text-xs text-text-faint mt-0.5">Transaction ${esc(alert.transactionId)}</p>
-      </div>
-      <span class="badge ${severityBadgeClass(alert.severity)}">${esc(alert.severity)}</span>
-    </div>
-
-    <div class="grid grid-cols-2 gap-3 mb-5">
-      <div class="bg-surface-2 rounded-lg p-3">
-        <div class="text-xs text-text-faint mb-1">Risk Score</div>
-        <div class="text-xl font-mono font-semibold">${alert.riskScore.toFixed(2)}</div>
-      </div>
-      <div class="bg-surface-2 rounded-lg p-3">
-        <div class="text-xs text-text-faint mb-1">Decision</div>
-        <div class="text-xl"><span class="${decisionBadgeClass(alert.decision)}">${alert.decision}</span></div>
-      </div>
-    </div>
-
-    ${alert.reason ? `
-    <div class="mb-5">
-      <h4 class="text-sm font-medium mb-2">AI Detection Reason</h4>
-      <div class="bg-surface-2 rounded-lg p-3 text-xs text-text-dim leading-relaxed">${esc(alert.reason)}</div>
-      ${alert.sourceDataset ? `
-      <div class="mt-2 flex items-center gap-2 text-xs text-text-faint">
-        <span>Source dataset:</span>
-        <span class="font-mono text-text-dim">${esc(alert.sourceDataset)}</span>
-      </div>` : ''}
-    </div>` : ''}
-
-    ${alert.shapExplanation.topFeatures.length > 0 ? `
-    <div class="mb-5">
-      <h4 class="text-sm font-medium mb-2">SHAP Explanation</h4>
-      <p class="text-xs text-text-faint mb-3">Feature contributions to the risk score</p>
-      <div class="space-y-2">
-        ${alert.shapExplanation.topFeatures.map((f) => `
-          <div>
-            <div class="flex justify-between text-xs mb-1">
-              <span class="text-text-dim font-mono">${esc(f.feature)}</span>
-              <span class="font-mono ${f.impact >= 0 ? 'text-text' : 'text-text-faint'}">${f.impact >= 0 ? '+' : ''}${f.impact.toFixed(2)}</span>
-            </div>
-            <div class="h-1.5 rounded-full bg-surface-3 overflow-hidden relative">
-              <div class="h-full ${f.impact >= 0 ? 'bg-text' : 'bg-text-faint'} rounded-full" style="width:${Math.min(Math.abs(f.impact) * 200, 100)}%; margin-left:${f.impact < 0 ? 'auto' : '0'}"></div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>` : ''}
-
-    <div>
-      <h4 class="text-sm font-medium mb-2">GNN Analysis</h4>
-      <p class="text-xs text-text-dim leading-relaxed mb-3">${esc(alert.gnnExplanation.summary)}</p>
-      <div class="flex items-center justify-between text-xs">
-        <span class="text-text-faint">Dataset: <span class="font-mono text-text-dim">${esc(alert.gnnExplanation.clusterId)}</span></span>
-        <span class="text-text-faint">Confidence: <span class="font-mono text-text-dim">${Math.round(alert.gnnExplanation.confidence * 100)}%</span></span>
-      </div>
-      <a href="graph.html" class="btn-primary w-full mt-4 text-xs">Investigate in Graph</a>
-    </div>
-  `;
-  animate(panel, { opacity: [0, 1], translateY: [8, 0], duration: 350, ease: 'outQuad' });
+  if(!alert)return;selectedId=alert.id;if(!dialog.open)dialog.showModal();
+  const shap=(alert.shapExplanation?.topFeatures||[]).filter(f=>typeof f.feature==='string'&&Number.isFinite(f.impact));
+  panel.innerHTML=`<h2 class="font-mono pr-8">${esc(alert.id)}</h2><p class="helper">${DEMO_MODE?'Fictional demonstration alert':'Configured source alert'} · ${formatDateTime(alert.timestamp)}</p><div class="record-links">${alert.transactionId?`<a class="btn-ghost" href="transactions.html?transaction=${encodeURIComponent(alert.transactionId)}">${icon('transactions',14)}View transaction</a>`:''}${alert.suspiciousAccount!=='Not supplied'?`<a class="btn-ghost" href="graph.html?account=${encodeURIComponent(alert.suspiciousAccount)}">${icon('graph',14)}Explore account</a>`:''}</div><dl class="detail-list"><div><dt>Recorded risk score</dt><dd>${formatRisk(alert.riskScore)}</dd></div><div><dt>Deterministic rule points</dt><dd>${alert.ruleScore==null?'Not supplied':`${alert.ruleScore}/100`}</dd></div><div><dt>Recommendation</dt><dd>${esc(alert.decision)}${alert.decision==='block'?' (recorded policy outcome, no funds blocked by this app)':''}</dd></div><div><dt>Reason</dt><dd>${esc(alert.reason||'No rationale supplied by the source')}</dd></div><div><dt>Source</dt><dd>${esc(alert.sourceDataset||'Not supplied')}</dd></div><div><dt>Model version</dt><dd>${esc(alert.modelVersion||'Not supplied')}</dd></div><div><dt>Policy version</dt><dd>${esc(alert.policyVersion||'Not supplied')}</dd></div><div><dt>Rule references</dt><dd>${esc(Array.isArray(alert.ruleIds)?alert.ruleIds.join(', ')||'Not supplied':'Not supplied')}</dd></div></dl>${alert.signals?`<h3 class="mt-5">Separate risk signals</h3><dl class="detail-list">${Object.entries(alert.signals).map(([key,value])=>`<div><dt>${esc(key)}</dt><dd>${value??'Not supplied'}</dd></div>`).join('')}</dl><p class="helper">These signals may use different scales. They are not added or presented as calibrated probabilities.</p>`:''}${shap.length?`<h3 class="mt-5">Supplied SHAP explanation</h3><div class="evidence-list">${shap.map(f=>`<div class="evidence-item">${esc(f.feature)}<small>Contribution: ${f.impact>=0?'+':''}${f.impact.toFixed(3)}</small></div>`).join('')}</div>`:''}${alert.gnnExplanation?`<h3 class="mt-5">Supplied graph explanation</h3><p class="helper">${esc(alert.gnnExplanation.summary||'No explanation summary supplied')}</p>`:'<p class="helper mt-5">No graph model explanation supplied. Investigate the observed relationships directly.</p>'}${alert.ruleAssessment?.features ? `<h3 class="mt-5">Observed account activity</h3><dl class="detail-list">${Object.entries(alert.ruleAssessment.features).map(([key,value]) => `<div><dt>${esc(featureLabels[key] || key)}</dt><dd>${esc(value ?? 'Not supplied')}</dd></div>`).join('')}</dl><p class="helper">Observed features at the event time, in the configured currency and window.</p>` : ''}<p class="helper">Risk signals and shared relationships support review; they do not prove wrongdoing.</p><section class="review-form-panel"><h3>Record analyst review</h3><p class="helper">${DEMO_MODE?'Saved in this browser with a demo audit event.':'Saved with an audit event in Firebase, subject to the project’s access rules.'} The model recommendation remains separate from your disposition.</p><form id="review-alert" class="form-grid"><label class="field">Investigator<input class="input" name="owner" value="${esc(alert.owner||'')}" placeholder="Investigator name"></label><label class="field">Review stage<select class="input" name="status">${stages.slice(1).map(([value,label])=>`<option value="${value}" ${stage(alert.status)===value?'selected':''}>${label}</option>`).join('')}</select></label><label class="field full-width">Disposition<select class="input" name="disposition"><option value="">Review ongoing</option><option value="no_further_action" ${alert.disposition==='no_further_action'?'selected':''}>No further action</option><option value="escalated_to_case" ${alert.disposition==='escalated_to_case'?'selected':''}>Escalated to a case</option></select></label><label class="field full-width">Rationale / analyst note<textarea class="input" name="note" rows="3" minlength="10" required>${esc(alert.analystNote||'')}</textarea></label><button class="btn-primary">Save review</button></form><p id="review-result" role="status" class="helper"></p><button class="btn-ghost mt-3" id="create-case" ${!DEMO_MODE?'disabled':''}>Create / open demo case →</button><p class="helper">${DEMO_MODE?'Case evidence is captured from the referenced fictional transaction.':'A secure case backend must be connected before live data can be escalated.'}</p></section>`;
+  document.getElementById('review-alert').onsubmit=async event=>{
+    event.preventDefault();const form=event.target,button=form.querySelector('button'),result=document.getElementById('review-result');button.disabled=true;
+    try{const values=Object.fromEntries(new FormData(form)),saved=await saveAlertReview(alert,values);allAlerts=allAlerts.map(a=>a.id===saved.id?saved:a);renderRows();renderDetail(saved);document.getElementById('review-result').textContent='Review saved with an audit event.';}
+    catch(error){result.textContent=error.code?'Review could not be saved. Check System status and Firebase write permissions.':error.message;}
+    finally{if(button.isConnected)button.disabled=false;}
+  };
+  document.getElementById('create-case').onclick=async()=>{
+    const result=document.getElementById('review-result');
+    try{const transactions=await getTransactions(),transaction=transactions.find(t=>t.id===alert.transactionId),caseId=createCaseFromAlert(alert,transaction,transactions);location.href=`compliance.html?view=cases&case=${encodeURIComponent(caseId)}`;}
+    catch(error){result.textContent=error.message;}
+  };
 }
-
-function applyFilters() {
-  const search = document.getElementById('search').value.toLowerCase();
-  const severity = document.getElementById('severity-filter').value;
-  const decision = document.getElementById('decision-filter').value;
-
-  const filtered = allAlerts.filter((a) => {
-    const matchesSearch = !search || a.id.toLowerCase().includes(search) || a.suspiciousAccount.toLowerCase().includes(search);
-    const matchesSeverity = !severity || a.severity === severity;
-    const matchesDecision = !decision || a.decision === decision;
-    return matchesSearch && matchesSeverity && matchesDecision && (!statusFilter || a.status === statusFilter);
-  });
-  renderRows(filtered);
-}
-
 async function init() {
-  allAlerts = (await getAlerts()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  renderRows(allAlerts);
-  const focusId = new URLSearchParams(location.search).get('alert');
-  if (focusId) renderDetail(allAlerts.find(a => a.id === focusId));
-
-  document.getElementById('search').addEventListener('input', applyFilters);
-  document.getElementById('severity-filter').addEventListener('change', applyFilters);
-  document.getElementById('decision-filter').addEventListener('change', applyFilters);
+  renderLoading(document.getElementById('alert-results'),'alerts');
+  try{allAlerts=await getAlerts();renderRows();const focus=new URLSearchParams(location.search).get('alert');if(focus){const record=allAlerts.find(a=>a.id===focus);if(record)renderDetail(record);else document.getElementById('alert-count').textContent='The referenced alert is outside the loaded sample or is unavailable.';}}
+  catch(error){renderLoadError(document.getElementById('alert-results'),error,()=>{clearDataCache();init();});}
 }
-
-document.querySelectorAll('[data-status]').forEach(b => b.onclick = () => { statusFilter = b.dataset.status; document.querySelectorAll('[data-status]').forEach(t => t.classList.toggle('selected',t === b)); applyFilters(); });
-document.querySelectorAll('[data-alert-view]').forEach(b => b.onclick = () => { alertView = b.dataset.alertView; document.querySelectorAll('[data-alert-view]').forEach(t => { t.classList.toggle('selected',t === b); t.setAttribute('aria-pressed', String(t === b)); }); applyFilters(); });
-
+for(const id of ['search','severity-filter','alert-sort'])document.getElementById(id).addEventListener(id==='search'?'input':'change',renderRows);
+document.querySelectorAll('[data-status]').forEach(button=>button.onclick=()=>{statusFilter=button.dataset.status;document.querySelectorAll('[data-status]').forEach(b=>b.classList.toggle('selected',b===button));renderRows();revealRegion(document.getElementById('alert-results'));});
+document.querySelectorAll('[data-alert-view]').forEach(button=>button.onclick=()=>{view=button.dataset.alertView;document.querySelectorAll('[data-alert-view]').forEach(b=>b.classList.toggle('selected',b===button));renderRows();revealRegion(document.getElementById('alert-results'));});
+document.getElementById('reset-filters').onclick=()=>{document.getElementById('search').value='';document.getElementById('severity-filter').value='';statusFilter='';document.querySelectorAll('[data-status]').forEach(b=>b.classList.toggle('selected',b.dataset.status===''));renderRows();};
 init();

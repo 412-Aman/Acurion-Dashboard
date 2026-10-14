@@ -1,10 +1,13 @@
 import { seedCompliance } from '../data/complianceData.js';
+import { defaultPolicy } from './amlEngine.js';
 const KEY = 'acurion.compliance.sandbox.v1';
 export function loadWorkspace() {
   const raw = localStorage.getItem(KEY);
-  if (!raw) return seedCompliance();
+  if (!raw) { const initial=seedCompliance(); localStorage.setItem(KEY,JSON.stringify(initial)); return initial; }
   const state = JSON.parse(raw);
   if (state.schemaVersion !== 1 || !Array.isArray(state.customers) || !Array.isArray(state.audit)) throw new Error('Unsupported workspace data. Export or clear sandbox storage before continuing.');
+  state.policy = { ...defaultPolicy, ...state.policy };
+  state.rejectedEvents ||= [];
   return state;
 }
 export function saveWorkspace(state, action, detail = '') {

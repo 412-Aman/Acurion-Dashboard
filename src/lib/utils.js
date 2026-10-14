@@ -1,8 +1,12 @@
 export function formatCurrency(value, currency = 'AED') {
+  if (value == null || !Number.isFinite(Number(value))) return 'Amount not supplied';
+  if (!currency) return `${Number(value).toLocaleString()} (currency not supplied)`;
+  if (!/^[A-Z]{3}$/.test(currency)) return `${Number(value).toLocaleString()} (invalid currency)`;
   return new Intl.NumberFormat('en-AE', { style: 'currency', currency, maximumFractionDigits: 2 }).format(value);
 }
 
 export function formatTimeAgo(isoString) {
+  if (!isoString || !Number.isFinite(Date.parse(isoString))) return 'Time not supplied';
   const diff = Date.now() - new Date(isoString).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';
@@ -13,6 +17,7 @@ export function formatTimeAgo(isoString) {
 }
 
 export function formatDateTime(isoString) {
+  if (!isoString || !Number.isFinite(Date.parse(isoString))) return 'Time not supplied';
   return new Date(isoString).toLocaleString('en-GB', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
   });
@@ -38,9 +43,11 @@ export function decisionBadgeClass(decision) {
   switch (decision) {
     case 'block': return 'badge badge-block';
     case 'flag': return 'badge badge-flag';
-    default: return 'badge badge-pass';
+    case 'pass': return 'badge badge-pass';
+    default: return 'badge badge-low';
   }
 }
+export function formatRisk(score) { return score == null || !Number.isFinite(score) ? 'Not supplied' : `${Math.round(score * 100)}/100`; }
 
 export function $(selector, root = document) {
   return root.querySelector(selector);

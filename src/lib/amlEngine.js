@@ -1,6 +1,12 @@
 // Deterministic, explainable policy rules. No model training or inferred guilt.
-export const POLICY_VERSION = 'rules-1.0';
-export const defaultPolicy = { incomeMultiple: 3, bulkCount: 3, windowDays: 30, retentionYears: 5, reviewDays: 365, screeningDays: 30, highRiskCountries: [] };
+export const POLICY_VERSION = 'rules-1.1';
+export const defaultPolicy = { incomeMultiple: 3, bulkCount: 3, windowDays: 30, velocityEnabled:true, structuringEnabled:true, velocityMinutes:5, velocityCount:5, structuringCount:3, structuringRatio:0.8, retentionYears: 5, reviewDays: 365, screeningDays: 30, highRiskCountries: [] };
+export function accountBehavior(tx,history,minutes=5) {
+  const end=Date.parse(tx.timestamp),start=end-minutes*60000;
+  const records=[...new Map([...history,tx].map(t=>[t.id,t])).values()].filter(t=>t.currency===tx.currency && Number.isFinite(t.amount) && t.amount>0 && Date.parse(t.timestamp)>=start && Date.parse(t.timestamp)<=end);
+  const outgoing=records.filter(t=>t.fromAccount===tx.fromAccount),incoming=records.filter(t=>t.toAccount===tx.fromAccount);
+  return {currency:tx.currency,windowMinutes:minutes,outgoingCount:outgoing.length,incomingCount:incoming.length,totalOutflow:outgoing.reduce((sum,t)=>sum+t.amount,0),totalInflow:incoming.reduce((sum,t)=>sum+t.amount,0),maximumAmount:outgoing.length?Math.max(...outgoing.map(t=>t.amount)):null,uniqueCounterparties:new Set(outgoing.map(t=>t.toAccount).filter(Boolean)).size};
+}
 export function normalizeName(name) {
   return String(name || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 }
@@ -21,10 +27,12 @@ export function screenEntity(entity, records) {
   });
 }
 export function assessTransaction(tx, customer, history, policy = defaultPolicy, screening = []) {
+  policy = { ...defaultPolicy, ...policy };
   const reasons = [];
   let points = 0;
   const add = (code, message, weight) => { reasons.push({ code, message, points: weight }); points += weight; };
   let decision = 'pass';
+  if (!Number.isFinite(tx.amount) || tx.amount <= 0 || !Number.isFinite(Date.parse(tx.timestamp)) || !/^[A-Z]{3}$/.test(tx.currency || '')) add('DATA_QUALITY', 'Invalid amount, currency or event time; cannot clear this event', 25);
   if (!customer) add('PROFILE_MISSING', 'Customer profile missing; review required', 25);
   else {
     const sameCurrency = tx.currency === customer.currency;
@@ -34,7 +42,12 @@ export function assessTransaction(tx, customer, history, policy = defaultPolicy,
     if (customer.pep !== 'none') add('PEP', 'PEP or related person: enhanced due diligence', 25);
     const end = Date.parse(tx.timestamp);
     const start = end - policy.windowDays * 86400000;
-    const comparable = history.filter(t => t.fromAccount === tx.fromAccount && t.currency === customer.currency && Number.isFinite(Date.parse(t.timestamp)) && Date.parse(t.timestamp) >= start && Date.parse(t.timestamp) <= end);
+    const uniqueHistory = [...new Map([...history, tx].map(t => [t.id, t])).values()];
+    const comparable = uniqueHistory.filter(t => t.fromAccount === tx.fromAccount && t.currency === customer.currency && Number.isFinite(t.amount) && t.amount > 0 && Number.isFinite(Date.parse(t.timestamp)) && Date.parse(t.timestamp) >= start && Date.parse(t.timestamp) <= end);
+    const recent = comparable.filter(t => Date.parse(t.timestamp) >= end - policy.velocityMinutes * 60000);
+    if (policy.velocityEnabled && sameCurrency && recent.length >= policy.velocityCount) add('VELOCITY', `${recent.length} outgoing transfers in ${policy.velocityMinutes} minutes (limit ${policy.velocityCount})`, 20);
+    const nearThreshold = recent.filter(t => t.amount >= customer.threshold * policy.structuringRatio && t.amount < customer.threshold);
+    if (policy.structuringEnabled && sameCurrency && tx.amount >= customer.threshold * policy.structuringRatio && tx.amount < customer.threshold && nearThreshold.length >= policy.structuringCount) add('STRUCTURING', `${nearThreshold.length} transfers between ${Math.round(policy.structuringRatio * 100)}% and below the customer threshold in ${policy.velocityMinutes} minutes`, 25);
     if (sameCurrency && tx.amount >= customer.threshold && comparable.filter(t => t.amount >= customer.threshold).length >= policy.bulkCount) add('BULK', `${policy.bulkCount}+ large transfers in ${policy.windowDays} days`, 25);
     if (sameCurrency && customer.expectedMonthly > 0 && comparable.reduce((n, t) => n + t.amount, 0) > customer.expectedMonthly * policy.incomeMultiple) add('TURNOVER', 'Rolling outgoing volume exceeds expected activity', 20);
     if (customer.kyc !== 'verified') add('KYC', 'KYC pending or enhanced review required', 20);
@@ -49,7 +62,7 @@ export function assessTransaction(tx, customer, history, policy = defaultPolicy,
     else if (hit.disposition === 'pending') add('SCREENING_PENDING', 'Potential screening match requires identity review', 20);
   }
   if (decision !== 'block' && reasons.length) decision = 'flag';
-  return { transactionId: tx.id, customerId: customer?.id || null, score: Math.min(100, points), decision, reasons, policyVersion: POLICY_VERSION };
+  return { transactionId: tx.id, customerId: customer?.id || null, score: Math.min(100, points), decision, reasons, policyVersion: POLICY_VERSION, policySnapshot:{...policy}, evaluatedAt:new Date().toISOString(), features:accountBehavior(tx,history,policy.velocityMinutes), featureWindow:{end:tx.timestamp,days:policy.windowDays,velocityMinutes:policy.velocityMinutes}, evidenceTransactionIds:[...new Set(history.filter(t=>t.fromAccount===tx.fromAccount && t.currency===tx.currency && Date.parse(t.timestamp)<=Date.parse(tx.timestamp) && Date.parse(t.timestamp)>=Date.parse(tx.timestamp)-policy.windowDays*86400000).map(t=>t.id))] };
 }
 export function customerRisk(customer, assessments = [], findings = []) {
   const factors = [];

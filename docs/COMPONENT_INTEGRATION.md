@@ -34,7 +34,7 @@ A full React rewrite is unnecessary: current Firebase authentication, transactio
 
 ## Navigation
 
-The sidebar now has a 72px workspace rail and a contextual panel. The four rail sections (Workspace, Monitor, Review and Records) show the relevant destinations with purpose descriptions. The Acurion monogram, panel captions and module cards distinguish this design from the previous generic link list. Collapse, resize, keyboard focus, mobile overlay, account menu and global search remain available. Compliance section changes also synchronize the contextual panel.
+The sidebar retains the Acurion monogram and a 72px rail with direct destination shortcuts. All main pages remain visible in stable workflow groups in the expanded panel. Breadcrumbs, collapse, resize, keyboard focus, mobile overlay, account menu and global search remain available. Compliance page changes update the active destination. Working drafts sit under Reports & audit.
 
 ## Verification
 

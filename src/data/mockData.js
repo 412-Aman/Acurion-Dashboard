@@ -10,12 +10,13 @@ const accounts = [
 const severities = ['low', 'medium', 'high', 'critical'];
 const decisions = ['pass', 'flag', 'block'];
 
-function rand(min, max) { return Math.random() * (max - min) + min; }
-function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+let demoSeed = 412;
+function rand(min, max) { demoSeed = (demoSeed * 1664525 + 1013904223) >>> 0; return (demoSeed / 4294967296) * (max - min) + min; }
+function pick(arr) { return arr[Math.floor(rand(0, arr.length))]; }
 function pad(n, len = 5) { return String(n).padStart(len, '0'); }
 
 function genTimestamp(offsetMin) {
-  return new Date(Date.now() - offsetMin * 60000).toISOString();
+  return new Date(Date.parse('2026-10-01T12:00:00Z') - offsetMin * 60000).toISOString();
 }
 
 export const transactions = Array.from({ length: 48 }).map((_, i) => {
@@ -31,6 +32,7 @@ export const transactions = Array.from({ length: 48 }).map((_, i) => {
     riskScore: Math.round(risk * 100) / 100,
     decision,
     channel: pick(['Wire Transfer', 'Card Payment', 'Mobile App', 'ATM', 'SWIFT']),
+    sourceDataset: 'Reproducible synthetic demonstration',
   };
 });
 
@@ -46,6 +48,7 @@ export const alerts = transactions
       decision: t.decision,
       severity,
       suspiciousAccount: t.fromAccount,
+      sourceDataset: 'Reproducible synthetic demonstration',
       status: pick(['open', 'open', 'investigating', 'resolved']),
       shapExplanation: {
         topFeatures: [
@@ -82,21 +85,12 @@ function buildGraphData() {
   const edgeSet = new Map();
   transactions.forEach((t) => {
     if (t.fromAccount === t.toAccount) return;
-    const key = `${t.fromAccount}->${t.toAccount}`;
-    if (!edgeSet.has(key)) {
-      edgeSet.set(key, {
-        data: {
-          id: key,
-          source: t.fromAccount,
-          target: t.toAccount,
-          type: 'transaction',
-          weight: 1,
-          flagged: t.decision !== 'pass',
-        },
-      });
-    } else {
-      edgeSet.get(key).data.weight += 1;
-    }
+    edgeSet.set(t.id, { data: {
+      id: t.id, transactionId: t.id, source: t.fromAccount, target: t.toAccount,
+      type: 'transaction', weight: 1, flagged: t.decision !== 'pass',
+      amount: t.amount, currency: t.currency, timestamp: t.timestamp,
+      sourceDataset: 'Reproducible synthetic demonstration',
+    } });
   });
 
   // Add a few synthetic shared-device / shared-IP edges to demonstrate multi-layer graph
@@ -108,7 +102,7 @@ function buildGraphData() {
     { source: 'ACC-40087', target: 'ACC-50012', type: 'shared_ip' },
   ];
   extraEdges.forEach((e, i) => {
-    edgeSet.set(`extra-${i}`, { data: { id: `extra-${i}`, ...e, weight: 1, flagged: true } });
+    edgeSet.set(`extra-${i}`, { data: { id: `extra-${i}`, ...e, weight: 1, flagged: false, provenance: "Explicit synthetic relationship", sourceDataset: "Reproducible synthetic demonstration" } });
   });
 
   return { nodes, edges: Array.from(edgeSet.values()) };
@@ -121,7 +115,7 @@ export const auditLogs = alerts.map((a, i) => ({
   timestamp: a.timestamp,
   alertId: a.id,
   transactionId: a.transactionId,
-  action: a.decision === 'block' ? 'Transaction blocked pending review' : 'Transaction flagged for analyst review',
+  action: a.decision === 'block' ? 'Simulated block recommendation' : 'Transaction flagged for analyst review',
   actor: 'system:decision-engine',
   decision: a.decision,
 }));

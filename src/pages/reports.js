@@ -1,138 +1,36 @@
 import '../styles/main.css';
-import { animate, stagger } from 'animejs';
+import { transitionView } from '../lib/motion.js';
 import { renderLayout } from '../components/layout.js';
+import { escapeHTML as esc } from '../components/icons.js';
 import { mountDraftTray } from '../islands/draft-tray.tsx';
-import { getAuditLogs, getOverviewStats } from '../lib/dataService.js';
-import { formatDateTime, decisionBadgeClass } from '../lib/utils.js';
-
-const main = renderLayout({
-  active: 'reports.html',
-  pageTitle: 'Reports',
-  pageSubtitle: 'Compliance audit trail & exportable summaries',
-});
-
-main.innerHTML = `
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6" id="summary-cards"></div>
-
-  <div class="card !p-0 overflow-hidden mb-6">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-border">
-      <div>
-        <h3 class="font-semibold">Audit Log</h3>
-        <p class="text-xs text-text-faint mt-0.5">Recorded decisions from the configured data source</p>
-      </div>
-      <button id="export-btn" class="btn-ghost text-xs">Export CSV</button>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="text-left text-text-faint text-xs uppercase tracking-wide bg-surface-2">
-            <th class="px-5 py-3 font-medium">Log ID</th>
-            <th class="px-5 py-3 font-medium">Alert</th>
-            <th class="px-5 py-3 font-medium">Transaction</th>
-            <th class="px-5 py-3 font-medium">Action</th>
-            <th class="px-5 py-3 font-medium">Decision</th>
-            <th class="px-5 py-3 font-medium">Actor</th>
-            <th class="px-5 py-3 font-medium text-right">Time</th>
-          </tr>
-        </thead>
-        <tbody id="log-rows"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="card">
-    <h3 class="font-semibold mb-2">Report Generation</h3>
-    <p class="text-sm text-text-faint mb-4">Generate a compliance summary for regulatory reporting (summary export).</p>
-    <div class="flex flex-wrap gap-3">
-      <button class="btn-primary text-sm" id="gen-report">Generate Summary Report</button>
-      <button class="btn-ghost text-sm" id="gen-sar">Open STR / SAR workspace</button>
-    </div>
-    <div id="report-output" class="mt-4 hidden"></div>
-  </div>
-  <div id="draft-tray" class="mt-6"></div>
-`;
-
+import { getAuditLogs,clearDataCache } from '../lib/dataService.js';
+import { loadWorkspace,saveWorkspace,downloadJSON } from '../lib/complianceStore.js';
+import { DEMO_MODE } from '../lib/config.js';
+import { buildCaseReport } from '../lib/caseWorkflow.js';
+import { formatDateTime } from '../lib/utils.js';
+import { renderLoading,renderLoadError } from '../components/dataFeedback.js';
+const main=renderLayout({active:'reports.html',pageTitle:'Reports & audit',pageSubtitle:'Export an investigation from its evidence and inspect recorded activity'});
+main.innerHTML=`<nav class="workspace-tabs" aria-label="Report sections"><a class="selected" href="#cases" data-report-view="cases">Case reports</a><a href="#audit" data-report-view="audit">Audit activity</a><a href="#draft-tray" data-report-view="draft-tray">Working drafts</a></nav><section id="cases"><div class="section-heading"><div><h3>Investigation reports</h3><p class="helper">Browser sandbox drafts. Complete the owner, jurisdiction, narrative and grounds in the case before export.</p></div><a class="btn-ghost" href="compliance.html?view=cases">Open cases →</a></div><div id="case-reports"></div><p class="helper" id="export-message" role="status"></p></section><section id="audit" hidden><div class="section-heading"><div><h3>Audit activity</h3><p class="helper">Source events and browser sandbox actions are labelled separately. Browser logs are not immutable.</p></div><button class="btn-ghost" id="export-audit" disabled>Export loaded CSV</button></div><div id="audit-results"></div></section><section id="draft-tray" hidden></section>`;
 mountDraftTray(document.getElementById('draft-tray'));
-
-async function renderSummary() {
-  const [stats, logs] = await Promise.all([getOverviewStats(), getAuditLogs()]);
-  const blocked = logs.filter((l) => l.decision === 'block').length;
-  const flagged = logs.filter((l) => l.decision === 'flag').length;
-
-  const el = document.getElementById('summary-cards');
-  el.innerHTML = `
-    <div class="stat-card">
-      <div class="text-2xl font-semibold font-mono">${logs.length}</div>
-      <div class="text-sm text-text-faint mt-1">Total audit entries</div>
-    </div>
-    <div class="stat-card">
-      <div class="text-2xl font-semibold font-mono">${blocked}</div>
-      <div class="text-sm text-text-faint mt-1">Transactions blocked</div>
-    </div>
-    <div class="stat-card">
-      <div class="text-2xl font-semibold font-mono">${flagged}</div>
-      <div class="text-sm text-text-faint mt-1">Transactions flagged</div>
-    </div>
-  `;
-
+let allLogs=[];
+function renderCases(){
+  try{const state=loadWorkspace();document.getElementById('case-reports').innerHTML=state.cases.length?`<div class="card !p-0 table-wrap"><table class="workspace-table"><thead><tr><th>Case</th><th>Owner</th><th>Stage</th><th>Evidence</th><th>Report</th><th>Actions</th></tr></thead><tbody>${state.cases.map(c=>`<tr><td>${esc(c.id)}<small>${esc(c.customerId)}</small></td><td>${esc(c.owner||'Unassigned')}</td><td>${esc(c.status.replaceAll('_',' '))}</td><td>${c.transactionIds.length} transactions · ${c.graphEvidence?.length||0} graph captures</td><td>${esc(c.reportType)}</td><td><a class="text-button" href="compliance.html?view=cases&case=${encodeURIComponent(c.id)}">Open case</a> <button class="btn-ghost" data-export-case="${esc(c.id)}">Export draft</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="card data-empty"><strong>No case reports yet</strong><p>Review an alert or run a monitoring scenario, open a case, and record your investigation.</p><a class="btn-primary" href="alerts.html">Review alerts →</a></div>';
+    main.querySelectorAll('[data-export-case]').forEach(button=>button.onclick=()=>{try{const latest=loadWorkspace(),record=latest.cases.find(c=>c.id===button.dataset.exportCase),report=buildCaseReport(latest,record);saveWorkspace(latest,'Report draft exported',record.id);downloadJSON(`${record.id}-draft.json`,report);document.getElementById('export-message').textContent='Draft exported with source references, graph evidence, notes and activity. No regulatory submission was performed.';}catch(error){document.getElementById('export-message').textContent=error.message;}});
+  }catch(error){renderLoadError(document.getElementById('case-reports'),error,renderCases);}
 }
-
-let allLogs = [];
-
-async function renderLogs() {
-  allLogs = (await getAuditLogs()).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  const tbody = document.getElementById('log-rows');
-  tbody.innerHTML = allLogs.map((l) => `
-    <tr class="table-row">
-      <td class="px-5 py-3 font-mono text-text-dim">${l.id}</td>
-      <td class="px-5 py-3 font-mono">${l.alertId}</td>
-      <td class="px-5 py-3 font-mono">${l.transactionId}</td>
-      <td class="px-5 py-3 text-text-dim">${l.action}</td>
-      <td class="px-5 py-3"><span class="${decisionBadgeClass(l.decision)}">${l.decision}</span></td>
-      <td class="px-5 py-3 font-mono text-text-faint">${l.actor}</td>
-      <td class="px-5 py-3 text-right text-text-faint">${formatDateTime(l.timestamp)}</td>
-    </tr>
-  `).join('');
-  if(location.hash === '#draft-tray') document.getElementById('draft-tray').scrollIntoView({block:'start'});
-
+async function renderAudit(){
+  const result=document.getElementById('audit-results');renderLoading(result,'audit activity');
+  let sandbox=[];
+  try{sandbox=loadWorkspace().audit.map(a=>({id:a.id,timestamp:a.at,action:a.action,actor:a.actor,detail:a.detail,source:'Browser sandbox'}));}catch{}
+  try{const logs=await getAuditLogs();allLogs=[...logs.map(l=>({...l,source:DEMO_MODE?'Demo transaction source':'Firebase transaction source'})),...sandbox].sort((a,b)=>(Date.parse(b.timestamp)||0)-(Date.parse(a.timestamp)||0));}
+  catch(error){allLogs=sandbox;renderLoadError(result,error,()=>{clearDataCache();renderAudit();});if(!sandbox.length)return;result.insertAdjacentHTML('beforeend','<p class="helper">Browser sandbox activity remains available below.</p>');}
+  const table=`<div class="card !p-0 table-wrap"><table class="workspace-table"><thead><tr><th>Time</th><th>Source</th><th>Action</th><th>Reference / detail</th><th>Actor</th></tr></thead><tbody>${allLogs.map(l=>`<tr><td>${formatDateTime(l.timestamp)}</td><td>${esc(l.source)}</td><td>${esc(l.action)}</td><td>${esc(l.alertId||l.transactionId||'')}<small>${esc(l.detail||'')}</small></td><td>${esc(l.actor)}</td></tr>`).join('')}</tbody></table></div>`;
+  if(result.querySelector('[role="alert"]'))result.insertAdjacentHTML('beforeend',table);else result.innerHTML=allLogs.length?table:'<div class="card data-empty">No audit events in this source.</div>';
+  document.getElementById('export-audit').disabled=!allLogs.length;
 }
-
-function exportCSV() {
-  const headers = ['Log ID', 'Alert', 'Transaction', 'Action', 'Decision', 'Actor', 'Time'];
-  const rows = allLogs.map((l) => [l.id, l.alertId, l.transactionId, l.action, l.decision, l.actor, l.timestamp]);
-  const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c ?? '').replaceAll('"', '""').replace(/^[=+@-]/, "'$&")}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'acurion_audit_log.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function generateReport() {
-  const output = document.getElementById('report-output');
-  const now = new Date().toLocaleString('en-GB');
-  const blocked = allLogs.filter((l) => l.decision === 'block').length;
-  const flagged = allLogs.filter((l) => l.decision === 'flag').length;
-
-  const content = `
-      <div class="bg-surface-2 rounded-lg p-4 font-mono text-xs leading-relaxed text-text-dim">
-        <div class="text-text font-semibold mb-2">ACURION - LOADED AUDIT SUMMARY</div>
-        <div>Generated: ${now}</div>
-        <div class="mt-2">Loaded audit entries: ${allLogs.length}</div>
-        <div>Recorded block decisions: ${blocked}</div>
-        <div>Recorded flag decisions: ${flagged}</div>
-        <div class="mt-2 text-text-faint">Summary of the configured data source. Prepare an investigation-specific STR/SAR draft in the Compliance workspace.</div>
-      </div>
-    `;
-  output.innerHTML = content;
-  output.classList.remove('hidden');
-  animate(output, { opacity: [0, 1], translateY: [8, 0], duration: 350, ease: 'outQuad' });
-}
-
-renderSummary();
-renderLogs();
-document.getElementById('export-btn').addEventListener('click', exportCSV);
-document.getElementById('gen-report').addEventListener('click', () => generateReport());
-document.getElementById('gen-sar').addEventListener('click', () => { window.location.href = 'compliance.html'; });
+function showView(){const view=['cases','audit','draft-tray'].includes(location.hash.slice(1))?location.hash.slice(1):'cases';for(const id of ['cases','audit','draft-tray'])document.getElementById(id).hidden=id!==view;main.querySelectorAll('[data-report-view]').forEach(link=>{link.classList.toggle('selected',link.dataset.reportView===view);link.setAttribute('aria-current',link.dataset.reportView===view?'page':'false');});if(view==='audit')renderAudit();}
+document.getElementById('export-audit').onclick=()=>{const rows=[['Time','Source','Action','Alert','Transaction','Detail','Actor'],...allLogs.map(l=>[l.timestamp,l.source,l.action,l.alertId,l.transactionId,l.detail,l.actor])];const csv=rows.map(row=>row.map(value=>`"${String(value??'').replaceAll('"','""').replace(/^[=+@-]/,"'$&")}"`).join(',')).join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv'})),link=document.createElement('a');link.href=url;link.download='acurion-audit-sample.csv';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);try{saveWorkspace(loadWorkspace(),'Audit sample exported',`${allLogs.length} loaded rows`);}catch{document.getElementById('export-message').textContent='CSV downloaded, but the browser export log could not be saved.';}};
+main.querySelectorAll('[data-report-view]').forEach(link => link.onclick = event => { event.preventDefault(); if(location.hash===link.hash)return; transitionView(() => { history.pushState(null,'',link.hash); showView(); }).catch(() => showView()); });
+window.addEventListener('hashchange',() => transitionView(showView));
+window.addEventListener('popstate',() => transitionView(showView));
+renderCases();showView();

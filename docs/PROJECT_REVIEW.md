@@ -1,3 +1,5 @@
+> Updated investigation flow, connection diagnosis and report mapping: [Report alignment](REPORT_ALIGNMENT.md). This review retains the original feature research and production limits.
+
 # Acurion project review and implementation boundaries
 
 Reviewed 12 October 2026. No paid service, subscription, account or cloud deployment was created.

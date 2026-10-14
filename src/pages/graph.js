@@ -1,281 +1,60 @@
 import '../styles/main.css';
-import { animate } from 'animejs';
 import cytoscape from 'cytoscape';
-import cola from 'cytoscape-cola';
 import { renderLayout } from '../components/layout.js';
-import { getGraphData, getAlerts } from '../lib/dataService.js';
-import { severityBadgeClass } from '../lib/utils.js';
-
-cytoscape.use(cola);
-
-const main = renderLayout({
-  active: 'graph.html',
-  pageTitle: 'Graph Investigation',
-  pageSubtitle: 'Multi-layer account network - transactions, shared devices & IPs',
-});
-
-main.innerHTML = `
-  <div class="graph-layout" style="display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;">
-    <div class="card" style="padding:0;overflow:hidden;position:relative;">
-      <div style="position:absolute;top:12px;left:12px;z-index:10;display:flex;flex-wrap:wrap;gap:6px;">
-        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="all">All</button>
-        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="transaction">IBM AML</button>
-        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="suspicious">PaySim</button>
-        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;" data-filter="flagged">Flagged</button>
-      </div>
-      <div style="position:absolute;top:12px;right:12px;z-index:10;display:flex;gap:6px;">
-        <button id="zoom-in" class="btn-ghost" style="font-size:13px;padding:4px 10px;font-weight:600;">+</button>
-        <button id="zoom-out" class="btn-ghost" style="font-size:13px;padding:4px 10px;font-weight:600;">−</button>
-        <button id="fit" class="btn-ghost" style="font-size:11px;padding:4px 10px;">Fit</button>
-      </div>
-      <div id="cy" style="width:100%;height:560px;"></div>
-      <div style="position:absolute;bottom:12px;left:12px;z-index:10;display:flex;align-items:center;gap:14px;padding:6px 12px;background:rgba(23,23,23,0.85);border:1px solid var(--color-border);border-radius:8px;backdrop-filter:blur(8px);font-size:11px;color:var(--color-text-faint);">
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#929292;display:inline-block;"></span>Low</span>
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#c5c5c5;display:inline-block;"></span>Medium</span>
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#dedede;display:inline-block;"></span>High</span>
-        <span style="display:flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:99px;background:#eeeeee;display:inline-block;"></span>Critical</span>
-      </div>
-    </div>
-
-    <div class="card" id="node-detail" style="overflow-y:auto;max-height:600px;">
-      <div style="text-align:center;padding:48px 0;color:var(--color-text-faint);font-size:13px;">
-        Click a node to inspect.
-      </div>
-    </div>
-  </div>
-`;
-
-let cy;
-let alertsByAccount = {};
-
-const RISK_COLOR = {
-  low:      '#414141',
-  medium:   '#626262',
-  high:     '#858585',
-  critical: '#eeeeee',
-};
-const RISK_BORDER = {
-  low:      '#929292',
-  medium:   '#c5c5c5',
-  high:     '#dedede',
-  critical: '#eeeeee',
-};
-const RISK_SIZE = { low: 26, medium: 32, high: 38, critical: 44 };
-
-async function init() {
-  const [graphData, alerts] = await Promise.all([getGraphData(), getAlerts()]);
-  alertsByAccount = Object.fromEntries(alerts.map((a) => [a.suspiciousAccount, a]));
-
-  cy = cytoscape({
-    container: document.getElementById('cy'),
-    elements: [...graphData.nodes, ...graphData.edges],
-    style: [
-      {
-        selector: 'node',
-        style: {
-          'background-color': (n) => RISK_COLOR[n.data('risk')] || RISK_COLOR.low,
-          'width':  (n) => RISK_SIZE[n.data('risk')] || RISK_SIZE.low,
-          'height': (n) => RISK_SIZE[n.data('risk')] || RISK_SIZE.low,
-          'label': 'data(label)',
-          'color': '#b3b3b3',
-          'font-size': '8px',
-          'font-family': 'system-ui, sans-serif',
-          'text-valign': 'bottom',
-          'text-margin-y': 5,
-          'border-width': 1.5,
-          'border-color': (n) => RISK_BORDER[n.data('risk')] || RISK_BORDER.low,
-        },
-      },
-      {
-        selector: 'edge[type = "transaction"]',
-        style: {
-          'width': 1,
-          'line-color': '#414141',
-          'target-arrow-color': '#414141',
-          'target-arrow-shape': 'triangle',
-          'curve-style': 'bezier',
-          'arrow-scale': 0.7,
-        },
-      },
-      {
-        selector: 'edge[type = "shared_device"]',
-        style: {
-          'width': 1,
-          'line-color': '#303030',
-          'line-style': 'dashed',
-          'curve-style': 'bezier',
-          'target-arrow-shape': 'none',
-        },
-      },
-      {
-        selector: 'edge[type = "shared_ip"]',
-        style: {
-          'width': 1,
-          'line-color': '#303030',
-          'line-style': 'dotted',
-          'curve-style': 'bezier',
-          'target-arrow-shape': 'none',
-        },
-      },
-      {
-        selector: 'edge[type = "suspicious"]',
-        style: {
-          'width': 1.5,
-          'line-color': '#999999',
-          'line-style': 'dashed',
-          'target-arrow-color': '#999999',
-          'target-arrow-shape': 'triangle',
-          'curve-style': 'bezier',
-          'arrow-scale': 0.7,
-        },
-      },
-      {
-        selector: 'edge[flagged = "true"], edge[?flagged]',
-        style: {
-          'line-color': '#c5c5c5',
-          'target-arrow-color': '#c5c5c5',
-          'opacity': 0.85,
-        },
-      },
-      {
-        selector: '.faded',
-        style: { 'opacity': 0.08 },
-      },
-      {
-        selector: '.highlighted',
-        style: {
-          'border-width': 2.5,
-          'border-color': '#eeeeee',
-        },
-      },
-    ],
-    layout: {
-      name: 'cose',
-      animate: false,
-      randomize: true,
-      nodeRepulsion: () => 8000,
-      idealEdgeLength: () => 80,
-      edgeElasticity: () => 100,
-      nestingFactor: 5,
-      gravity: 80,
-      numIter: 1000,
-      initialTemp: 200,
-      coolingFactor: 0.95,
-      minTemp: 1,
-      fit: true,
-      padding: 40,
-    },
-    minZoom: 0.25,
-    maxZoom: 3,
-  });
-
-  cy.on('tap', 'node', (evt) => {
-    const node = evt.target;
-    cy.elements().removeClass('faded highlighted');
-    const neighborhood = node.closedNeighborhood();
-    cy.elements().not(neighborhood).addClass('faded');
-    node.addClass('highlighted');
-    renderNodeDetail(node);
-  });
-
-  cy.on('tap', (evt) => {
-    if (evt.target === cy) {
-      cy.elements().removeClass('faded highlighted');
-      document.getElementById('node-detail').innerHTML = `
-        <div class="text-center py-16 text-text-faint text-sm">
-          Click a node to inspect account relationships.
-        </div>
-      `;
-    }
-  });
-
-  document.querySelectorAll('[data-filter]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const filter = btn.dataset.filter;
-      document.querySelectorAll('[data-filter]').forEach((b) => b.classList.remove('!border-border-light', '!text-text'));
-      btn.classList.add('!border-border-light', '!text-text');
-      cy.edges().forEach((edge) => {
-        let show = false;
-        if (filter === 'all') {
-          show = true;
-        } else if (filter === 'flagged') {
-          show = edge.data('flagged') === true;
-        } else {
-          show = edge.data('type') === filter;
-        }
-        edge.style('display', show ? 'element' : 'none');
-      });
-    });
-  });
-
-  document.getElementById('zoom-in').addEventListener('click', () => cy.zoom(cy.zoom() * 1.3));
-  document.getElementById('zoom-out').addEventListener('click', () => cy.zoom(cy.zoom() * 0.7));
-  document.getElementById('fit').addEventListener('click', () => cy.fit(undefined, 40));
+import { escapeHTML as esc } from '../components/icons.js';
+import { getGraphData,getAlerts,clearDataCache } from '../lib/dataService.js';
+import { boundedNeighborhood,findTransactionPath,filterGraphEdges } from '../lib/graphInvestigation.js';
+import { loadWorkspace } from '../lib/complianceStore.js';
+import { attachGraphEvidence } from '../lib/caseWorkflow.js';
+import { DEMO_MODE } from '../lib/config.js';
+import { formatCurrency,formatDateTime } from '../lib/utils.js';
+import { renderLoading,renderLoadError } from '../components/dataFeedback.js';
+const main=renderLayout({active:'graph.html',pageTitle:'Account network',pageSubtitle:'Inspect observed links and dated transaction chains'});
+main.innerHTML=`<div class="card mb-5"><form id="network-filter" class="graph-filter"><label class="field">Account<input class="input" id="focus-account" list="account-options" placeholder="Find an account ID"></label><datalist id="account-options"></datalist><label class="field">Neighborhood<select class="input" id="hops"><option value="1">1 hop</option><option value="2">2 hops</option><option value="3">3 hops</option></select></label><label class="field">Relationship<select id="edge-type" class="input"><option value="all">All observed links</option><option value="transaction">Transactions</option><option value="shared_device">Shared device</option><option value="shared_ip">Shared IP</option><option value="shared_location">Shared location</option><option value="flagged">Flagged transactions</option></select></label><label class="field">Currency<input class="input" id="currency" placeholder="Any" pattern="[A-Z]{3}"></label><label class="field">Minimum amount<input class="input" id="minimum" type="number" min="0" step="0.01" placeholder="Any"></label><label class="field">From date<input class="input" id="start-date" type="date"></label><label class="field">To date<input class="input" id="end-date" type="date"></label><div class="action-row"><button class="btn-primary">Apply</button><button type="button" class="btn-ghost" id="reset-network">Reset</button></div></form><p class="helper">Neighborhoods are limited to 100 accounts and 3 hops. Date and amount filters exclude links without those fields. Shared attributes are leads, not proof.</p></div><p class="helper mb-3" id="graph-summary" role="status"></p><div id="graph-load-state"></div><div class="graph-layout"><section class="card graph-canvas"><div class="graph-tools"><button class="btn-ghost" id="zoom-in" aria-label="Zoom in">+</button><button class="btn-ghost" id="zoom-out" aria-label="Zoom out">−</button><button class="btn-ghost" id="fit">Fit</button></div><div id="cy"></div><p class="helper graph-caption">Arrows show transfer direction. Dashed lines show shared attributes.</p></section><section class="card" id="node-detail"><h3>Account evidence</h3><p class="helper">Select an account in the graph or enter its ID above.</p></section></div><section class="card mt-5"><h3>Trace a transaction chain</h3><p class="helper">Search for a directed path with nondecreasing timestamps, up to 6 transfers. Only dated transaction edges are used. A path is an investigation lead.</p><form id="path-form" class="form-grid mt-3"><label class="field">From account<input class="input" id="path-from" list="account-options" required></label><label class="field">To account<input class="input" id="path-to" list="account-options" required></label><button class="btn-primary">Trace path</button></form><div id="path-result" class="mt-3"></div></section><section class="card mt-5"><h3>Keep graph evidence with a case</h3><p class="helper">${DEMO_MODE?'Attach the selected neighborhood or traced path to a browser sandbox case.':'Live evidence capture needs the new secured backend. Demo cases remain separate.'}</p><div class="record-links"><select class="input" id="evidence-case" aria-label="Case for graph evidence"></select><button class="btn-primary" id="attach-evidence" ${!DEMO_MODE?'disabled':''}>Attach selected evidence</button><a class="btn-ghost" href="compliance.html?view=cases">Open cases →</a></div><p class="helper" role="status" id="evidence-status"></p></section>`;
+let graph={nodes:[],edges:[]},alerts=[],cy,visibleEdges=[],evidence=null;
+const params=new URLSearchParams(location.search);document.getElementById('focus-account').value=params.get('account')||'';
+function filters(){return {type:document.getElementById('edge-type').value,currency:document.getElementById('currency').value,minimumAmount:document.getElementById('minimum').value===''?null:Number(document.getElementById('minimum').value),start:document.getElementById('start-date').value?`${document.getElementById('start-date').value}T00:00:00Z`:null,end:document.getElementById('end-date').value?`${document.getElementById('end-date').value}T23:59:59.999Z`:null};}
+function evidenceRows(edges){return edges.map(e=>`<div class="evidence-item"><strong>${esc(e.source)} → ${esc(e.target)}</strong><small>${esc(e.transactionId||e.id)} · ${e.type==='transaction'||e.type==='suspicious'?formatCurrency(e.amount,e.currency):esc(e.type)}</small><small>${formatDateTime(e.timestamp)} · ${esc(e.provenance||e.sourceDataset||'Source not supplied')}</small>${e.transactionId?`<a class="text-button" href="transactions.html?transaction=${encodeURIComponent(e.transactionId)}">View source transaction →</a>`:''}</div>`).join('');}
+function inspectAccount(id){
+  const neighborhood=boundedNeighborhood(graph.nodes,visibleEdges,id,Number(document.getElementById('hops').value));
+  if(!neighborhood.nodes.length){document.getElementById('graph-summary').textContent='This account is unavailable in the loaded graph sample.';return;}
+  evidence={kind:'account-neighborhood',accountId:id,nodes:neighborhood.nodes,edges:neighborhood.edges,filters:filters(),hops:Number(document.getElementById('hops').value),truncated:neighborhood.truncated};
+  const record=graph.nodes.find(n=>n.data.id===id)?.data,related=alerts.filter(a=>a.suspiciousAccount===id);
+  document.getElementById('path-from').value=id;
+  document.getElementById('node-detail').innerHTML=`<h3 class="font-mono">${esc(id)}</h3><p class="helper">${neighborhood.nodes.length-1} connected accounts · ${neighborhood.edges.length} relationships${neighborhood.truncated?' · bounded view':''}</p>${record?.entityName?`<p>${esc(record.entityName)}</p>`:''}<div class="record-links"><a class="btn-ghost" href="transactions.html?account=${encodeURIComponent(id)}">Account transactions →</a></div>${related.length?`<h4>Related alerts</h4><div class="evidence-list">${related.map(a=>`<a href="alerts.html?alert=${encodeURIComponent(a.id)}">${esc(a.id)}<small>${esc(a.severity)} · ${esc(a.status)}</small></a>`).join('')}</div>`:'<p class="helper">No matching account alert in the loaded sample.</p>'}<h4 class="mt-5">Source relationships</h4><div class="evidence-list">${evidenceRows(neighborhood.edges.slice(0,30))||'<p class="helper">No links match these filters.</p>'}</div>`;
+  if(cy){const nodes=new Set(neighborhood.nodes.map(n=>n.id)),edges=new Set(neighborhood.edges.map(e=>e.id));cy.elements().removeClass('faded');cy.elements().forEach(el=>{if(el.isNode()?!nodes.has(el.id()):!edges.has(el.id()))el.addClass('faded');});}
 }
-
-function renderNodeDetail(node) {
-  const id          = node.data('id');
-  const risk        = node.data('risk');
-  const cluster     = node.data('cluster');      // bankId
-  const bankName    = node.data('bankName')    || '';
-  const entityName  = node.data('entityName')  || '';
-  const sourceDs    = node.data('sourceDataset') || '';
-  const alert       = alertsByAccount[id];
-  const neighbors   = node.neighborhood('node');
-  const txEdges     = node.connectedEdges('[type = "transaction"]');
-  const fraudEdges  = node.connectedEdges('[type = "suspicious"]');
-
-  const panel = document.getElementById('node-detail');
-  panel.innerHTML = `
-    <div style="margin-bottom:16px;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;">
-        <h3 style="font-family:var(--font-mono);font-size:12px;color:var(--color-text);word-break:break-all;">${id}</h3>
-        <span class="badge ${severityBadgeClass(risk)}" style="flex-shrink:0;">${risk}</span>
-      </div>
-      <p style="font-size:11px;color:var(--color-text-faint);">${neighbors.length} connected account${neighbors.length === 1 ? '' : 's'}</p>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
-      <div style="background:var(--color-surface-2);border-radius:8px;padding:10px;">
-        <div style="font-size:10px;color:var(--color-text-faint);margin-bottom:4px;">Tx edges</div>
-        <div style="font-family:var(--font-mono);font-size:18px;color:var(--color-text);">${txEdges.length}</div>
-      </div>
-      <div style="background:var(--color-surface-2);border-radius:8px;padding:10px;">
-        <div style="font-size:10px;color:var(--color-text-faint);margin-bottom:4px;">Fraud edges</div>
-        <div style="font-family:var(--font-mono);font-size:18px;color:var(--color-text);">${fraudEdges.length}</div>
-      </div>
-    </div>
-
-    ${(bankName || entityName || cluster || sourceDs) ? `
-      <div style="background:var(--color-surface-2);border-radius:8px;padding:10px;margin-bottom:16px;">
-        <div style="font-size:10px;color:var(--color-text-faint);font-weight:500;margin-bottom:8px;">Account Info</div>
-        ${bankName   ? `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span style="color:var(--color-text-faint);">Bank</span><span style="font-family:var(--font-mono);color:var(--color-text-dim);">${bankName}</span></div>` : ''}
-        ${entityName ? `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span style="color:var(--color-text-faint);">Entity</span><span style="font-family:var(--font-mono);color:var(--color-text-dim);font-size:10px;">${entityName}</span></div>` : ''}
-        ${cluster    ? `<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;"><span style="color:var(--color-text-faint);">Bank ID</span><span style="font-family:var(--font-mono);color:var(--color-text-dim);">${cluster}</span></div>` : ''}
-        ${sourceDs   ? `<div style="display:flex;justify-content:space-between;font-size:11px;"><span style="color:var(--color-text-faint);">Dataset</span><span style="font-family:var(--font-mono);color:var(--color-text-dim);">${sourceDs}</span></div>` : ''}
-      </div>
-    ` : ''}
-
-    ${alert ? `
-      <div style="margin-bottom:16px;">
-        <h4 style="font-size:12px;font-weight:500;color:var(--color-text);margin-bottom:8px;">Active Alert</h4>
-        <div style="background:var(--color-surface-2);border-radius:8px;padding:10px;font-size:11px;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--color-text-faint);">ID</span><span style="font-family:var(--font-mono);">${alert.id}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--color-text-faint);">Risk</span><span style="font-family:var(--font-mono);">${alert.riskScore.toFixed(2)}</span></div>
-          <div style="display:flex;justify-content:space-between;"><span style="color:var(--color-text-faint);">Decision</span><span style="font-family:var(--font-mono);">${alert.decision}</span></div>
-        </div>
-        <a href="alerts.html" class="btn-primary" style="width:100%;margin-top:10px;font-size:12px;">View Alert →</a>
-      </div>
-    ` : `<p style="font-size:11px;color:var(--color-text-faint);margin-bottom:16px;">No active alerts.</p>`}
-
-    <div>
-      <h4 style="font-size:12px;font-weight:500;color:var(--color-text);margin-bottom:8px;">Connected Accounts</h4>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
-        ${neighbors.map((n) => `<span style="font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:99px;background:var(--color-surface-2);color:var(--color-text-dim);border:1px solid var(--color-border);">${n.id()}</span>`).join('')}
-      </div>
-    </div>
-  `;
-  animate(panel, { opacity: [0, 1], translateY: [8, 0], duration: 350, ease: 'outQuad' });
+function draw(){
+  if(cy)cy.destroy();evidence=null;visibleEdges=filterGraphEdges(graph.edges,filters());
+  const focus=document.getElementById('focus-account').value;
+  const neighborhood=focus?boundedNeighborhood(graph.nodes,visibleEdges,focus,Number(document.getElementById('hops').value)):null;
+  const nodes=neighborhood?neighborhood.nodes:graph.nodes.map(n=>n.data),edges=neighborhood?neighborhood.edges:visibleEdges;
+  document.getElementById('graph-summary').textContent=`${nodes.length} accounts · ${edges.length} observed relationships${neighborhood?.truncated?' · 100-account limit reached':''} · ${DEMO_MODE?'Fictional demo':'Loaded Firebase sample'}`;
+  if(!nodes.length){document.getElementById('cy').innerHTML='<div class="data-empty">No matching accounts in this sample. Reset the filters or check the data source.</div>';return;}
+  document.getElementById('cy').innerHTML='';
+  cy=cytoscape({container:document.getElementById('cy'),elements:[...nodes,...edges].map(data=>({data})),style:[
+    {selector:'node',style:{'background-color':'#525252','width':25,'height':25,'border-width':1.5,'border-color':'#aaa','label':'data(label)','color':'#bbb','font-size':9,'text-valign':'bottom','text-margin-y':6}},
+    {selector:'edge',style:{'width':1.2,'line-color':'#777','curve-style':'bezier','target-arrow-shape':'triangle','target-arrow-color':'#777','arrow-scale':.7}},
+    {selector:'edge[type ^= "shared_"]',style:{'line-style':'dashed','target-arrow-shape':'none','line-color':'#555'}},
+    {selector:'edge[?flagged]',style:{'line-color':'#eee','target-arrow-color':'#eee','width':2}},
+    {selector:'.faded',style:{opacity:.08}},
+    {selector:'.path-evidence',style:{'line-color':'#fff','target-arrow-color':'#fff','width':3}},
+  ],layout:{name:'cose',animate:false,randomize:false,padding:45,numIter:500},minZoom:.1,maxZoom:4});
+  cy.on('tap','node',event=>inspectAccount(event.target.id()));
+  if(focus)inspectAccount(focus);
 }
-
-init();
+async function init(){
+  const state=document.getElementById('graph-load-state');renderLoading(state,'account network');
+  const results=await Promise.allSettled([getGraphData(),getAlerts()]);
+  if(results[0].status==='rejected'){renderLoadError(state,results[0].reason,()=>{clearDataCache();init();});return;}
+  graph=results[0].value;alerts=results[1].status==='fulfilled'?results[1].value:[];state.innerHTML='';
+  document.getElementById('account-options').innerHTML=graph.nodes.map(n=>`<option value="${esc(n.data.id)}"></option>`).join('');draw();
+  try{const cases=loadWorkspace().cases.filter(c=>c.status!=='closed');document.getElementById('evidence-case').innerHTML=cases.length?cases.map(c=>`<option value="${esc(c.id)}">${esc(c.id)} · ${esc(c.customerId)}</option>`).join(''):'<option value="">Create a case from an alert first</option>';}catch{}
+}
+document.getElementById('network-filter').onsubmit=event=>{event.preventDefault();draw();};
+document.getElementById('reset-network').onclick=()=>{document.getElementById('network-filter').reset();document.getElementById('node-detail').innerHTML='<h3>Account evidence</h3><p class="helper">Select an account to inspect.</p>';draw();};
+for(const[id,multiplier]of [['zoom-in',1.25],['zoom-out',.8]])document.getElementById(id).onclick=()=>{if(cy)cy.zoom(cy.zoom()*multiplier);};
+document.getElementById('fit').onclick=()=>cy?.fit(undefined,40);
+document.getElementById('path-form').onsubmit=event=>{event.preventDefault();const result=document.getElementById('path-result'),from=document.getElementById('path-from').value,to=document.getElementById('path-to').value,path=findTransactionPath(visibleEdges,from,to);if(!path){evidence=null;result.innerHTML='<div class="data-empty">No directed, chronologically ordered path found within 6 transfers in this filtered sample.</div>';return;}evidence={kind:'dated-transaction-path',nodes:path.nodes.map(id=>graph.nodes.find(n=>n.data.id===id)?.data||{id}),edges:path.edges,filters:filters()};result.innerHTML=`<p class="helper">${path.edges.length} transfer${path.edges.length===1?'':'s'} from ${esc(from)} to ${esc(to)}. Amounts retain their original currencies.</p><div class="evidence-list">${evidenceRows(path.edges)}</div>`;cy?.elements().removeClass('path-evidence');for(const edge of path.edges)cy?.getElementById(edge.id).addClass('path-evidence');};
+document.getElementById('attach-evidence').onclick=()=>{const result=document.getElementById('evidence-status');try{if(!evidence)throw new Error('Select an account or trace a path first.');attachGraphEvidence(document.getElementById('evidence-case').value,evidence);result.textContent='Graph evidence saved to the case with an audit event.';}catch(error){result.textContent=error.message;}};
+window.addEventListener('pagehide',()=>cy?.destroy(),{once:true});init();
