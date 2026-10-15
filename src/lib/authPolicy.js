@@ -33,6 +33,12 @@ export function authErrorMessage(error) {
     'auth/unauthorized-domain':'Sign-in is not enabled on this address. Contact your workspace administrator.',
     'auth/unauthorized-continue-uri':'Firebase rejected the email’s return address. Ask your administrator to authorize the website domain in Authentication settings.',
     'auth/invalid-continue-uri':'The email return address is invalid. Contact your workspace administrator.',
+    'auth/invalid-sender':'Firebase rejected the verification email’s sender name or address. Your administrator needs to fix the Authentication email template.',
+    'auth/invalid-message-payload':'Firebase rejected the verification email template. Your administrator needs to check its contents in Authentication templates.',
+    'auth/invalid-recipient-email':'Firebase could not send to this account’s email address. Check the address shown on this page.',
+    'auth/invalid-user-token':'Your sign-in session is no longer valid. Sign out and sign in again before requesting verification.',
+    'auth/user-token-expired':'Your sign-in session has expired. Sign out and sign in again before requesting verification.',
+    'auth/internal-error':'Firebase could not complete the request (auth/internal-error). Your administrator needs to check the Firebase response before retrying.',
     'auth/quota-exceeded':'Firebase’s sending quota has been reached. Your administrator needs to check the project’s Authentication usage.',
     'auth/verification-send-failed':'The verification email request failed. Wait before trying again, or contact your workspace administrator.',
     'auth/operation-not-allowed':'This sign-in method is not enabled for your workspace.',
@@ -44,7 +50,10 @@ export function authErrorMessage(error) {
     'auth/session-required':'Sign in first to verify your email.',
     'config/incomplete':'Workspace sign-in setup is incomplete. Contact your workspace administrator or explore the demo.',
   };
-  return messages[code] || 'This action could not be completed. Please try again.';
+  if(messages[code])return messages[code];
+  // Show only bounded public SDK codes, never arbitrary error messages or tokens.
+  if(/^auth\/[a-z0-9-]{1,70}$/.test(code))return `Firebase could not complete this action (${code}). Share this code with your workspace administrator.`;
+  return 'This action could not be completed. Please try again.';
 }
 export function validateRegistration({name,email,password,confirmation}) {
   const errors=[];

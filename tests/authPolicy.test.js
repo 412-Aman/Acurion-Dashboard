@@ -31,4 +31,7 @@ test('auth errors do not reveal account existence, credentials or arbitrary serv
   assert.match(authErrorMessage({code:'auth/account-exists-with-different-credential'}),/original provider/);
   assert.match(authErrorMessage({code:'auth/expired-action-code'}),/expired/);
   assert.doesNotMatch(authErrorMessage({code:'unknown',message:'secret token value'}),/secret|token/);
+  assert.match(authErrorMessage({code:'auth/unrecognized-response',message:'secret token value'}),/auth\/unrecognized-response/);
+  assert.doesNotMatch(authErrorMessage({code:'auth/unrecognized-response',message:'secret token value'}),/secret token value/);
+  assert.doesNotMatch(authErrorMessage({code:'auth/bad?token=private'}),/private|token=/);
 });
