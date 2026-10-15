@@ -1,3 +1,5 @@
+export function cn(...classes) { return classes.filter(Boolean).join(' '); }
+
 export function formatCurrency(value, currency = 'AED') {
   if (value == null || !Number.isFinite(Number(value))) return 'Amount not supplied';
   if (!currency) return `${Number(value).toLocaleString()} (currency not supplied)`;

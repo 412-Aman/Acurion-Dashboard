@@ -3,8 +3,10 @@ import ChangelogTimeline, { type ChangelogEntry } from '@/components/ui/changelo
 
 // Product notes describe shipped functionality, never customer or audit events.
 const entries: ChangelogEntry[] = [
+  {id:'floating-dock',date:'2026-10-15',category:'improved',title:'A floating dock for everyday investigation',summary:'The main destinations are one click away, with gentle proximity magnification and current-page markers. All tools opens the complete workspace map; mobile navigation uses a labelled panel.'},
+  {id:'transaction-skyline',date:'2026-10-15',category:'new',title:'Explore the loaded transaction activity in 2D or 3D',summary:'A monochrome calendar rises into an interactive skyline. Counts use the loaded transaction sample and UTC dates, with a daily table and separate counts for excluded records.'},
   {id:'access-guidance',date:'2026-10-15',category:'improved',title:'Clear steps when access is blocked',summary:'Verification, expired sessions, read permissions and review writes now have separate messages. Each explains what you or your administrator need to do.'},
-  {id:'workspace-map',date:'2026-10-15',category:'new',title:'A workspace map that fits your workflow',summary:'Open every destination from the header. Reorder the map using a drag handle or your keyboard. Your arrangement is stored on this browser.'},
+  {id:'workspace-map',date:'2026-10-15',category:'new',title:'A workspace map that fits your workflow',summary:'Open every destination from All tools in the floating dock. Reorder the map using a drag handle or your keyboard. Your arrangement is stored on this browser.'},
   {id:'audit-source',date:'2026-10-15',category:'fixed',title:'Audit checks use Realtime Database',summary:'Audit activity reads the same database as transactions and alerts. The optional legacy Firestore source is disabled unless explicitly configured.'},
   {id:'verified-session',date:'2026-10-15',category:'fixed',title:'System status recognises your session',summary:'Signed-in analysts see their account and data connection details. An empty source is distinguished from a failed read.'},
 ];

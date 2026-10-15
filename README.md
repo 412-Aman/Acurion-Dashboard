@@ -55,7 +55,7 @@ Automatic feed updates, live news ingestion, secure server storage and goAML sub
 
 ## Integrated React components
 
-The app now also supports React 19 / TypeScript islands and a shadcn-compatible component folder. A single header opens a reorderable workspace map with every destination, workflow context and keyboard access. This replaces the permanent sidebar and duplicate shortcut rail. Header notifications use Live Notification Feed; the login and overview use Gateway Flow; **Reports & audit → Working drafts** includes HoldButton and Shredder with recoverable disposal.
+The app now also supports React 19 / TypeScript islands and a shadcn-compatible component folder. A floating dock links the main destinations directly; All tools opens a reorderable workspace map with every destination, workflow context and keyboard access. This replaces the permanent sidebar and duplicate shortcut rail. Header notifications use Live Notification Feed; the login and overview use Gateway Flow; **Reports & audit → Working drafts** includes HoldButton and Shredder with recoverable disposal.
 
 See [component integration notes](docs/COMPONENT_INTEGRATION.md) for exact source provenance, dependencies, setup and validation.
 
@@ -81,3 +81,5 @@ Buttons have eased hover, press and focus states. Page changes fade smoothly, lo
 
 
 The UI components live in `src/components/ui`, resolved through the existing `@/components/ui` alias and `components.json`. Tailwind 4 and TypeScript are already configured; no shadcn project reinitialization is needed. Sortable powers the workspace map. ChangelogTimeline shows actual product notes on System status, separately from customer audit events. Styling is in `src/styles/main.css`; the supplied tokens use neutral accents to match Acurion.
+
+The supplied FloatingDock is adapted in `src/components/ui/floating-dock.tsx` with restrained magnification, focus states, reduced-motion support and labelled mobile destinations. ContributionSkyline lives beside it and is loaded separately on Overview. It receives only actual loaded transaction counts; generated contribution data has been removed. The calendar ends on the latest supplied timestamp, groups days in UTC and reports missing timestamps and older records separately. Unloaded days do not imply zero institutional activity. A daily count table and transaction links provide a non-canvas alternative.

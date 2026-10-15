@@ -36,7 +36,7 @@ An email sign-in attempt with deliberately invalid synthetic credentials reached
 
 Shared button states use approximately 220 ms easing. Page content fades in over 280 ms, auth cards over 320 ms, and full-page navigation has a short 120 ms content exit. Rapid navigation keeps the latest destination.
 
-The permanent sidebar and shortcut rail have been replaced by one header and an accessible workspace map. Open the map with its header button or **M** while outside text fields. Command/Control K opens search. Reorder destinations using pointer handles or Space, arrow keys, Space to drop, and Escape to cancel. Only route IDs from the known destination list are accepted from local storage. The order is personal to this browser; resetting it does not change financial records.
+The permanent sidebar and shortcut rail have been replaced by a floating dock and an accessible workspace map. The dock links six main destinations; **All tools** opens the complete map. On mobile, the dock opens a labelled destination panel. Press **M** while outside text fields to open the map directly. Command/Control K opens search. Reorder destinations using pointer handles or Space, arrow keys, Space to drop, and Escape to cancel. Only route IDs from the known destination list are accepted from local storage. The order is personal to this browser; resetting it does not change financial records.
 
 Local compliance views and report tabs update live, then animate their content. Back/forward cache restoration clears obsolete exit animations. Modified-click, download and external-link semantics are preserved. Reduced-motion preferences disable decorative animations and reordering animations. HoldButton retains its required hold-to-confirm behavior.
 
@@ -49,3 +49,8 @@ Tooltips open on pointer hover and keyboard focus, close on Escape, and remain r
 - [Password authentication](https://firebase.google.com/docs/auth/web/password-auth)
 - [User management and email verification](https://firebase.google.com/docs/auth/web/manage-users)
 - [Custom email action handlers](https://firebase.google.com/docs/auth/custom-email-handler)
+
+
+## Transaction activity visualisation
+
+Overview loads ContributionSkyline in a separate chunk. It uses the bounded transaction read already shared by the dashboard. The scene stops requesting animation frames when settled or when the page is hidden, caps device pixel ratio at two, and keeps its height within a dashboard panel. Reduced motion jumps directly between flat and 3D views. Empty or undated data does not trigger generated activity.
