@@ -2,12 +2,13 @@ import { GoogleAuthProvider,GithubAuthProvider,signInWithPopup,signInWithEmailAn
 import { auth,configurationIssues,firebaseConfig } from './firebase.js';
 import { authSettings,validateRegistration } from './authPolicy.js';
 import { createVerificationDelivery } from './verificationDelivery.js';
+import { emailActionSettings } from './emailActionSettings.js';
 export const AUTH_SETTINGS=authSettings(import.meta.env);
 let verificationStorage;
 try{verificationStorage=localStorage;}catch{}
 const verificationDelivery=createVerificationDelivery({
   storage:verificationStorage,namespace:firebaseConfig.projectId,
-  send:user=>sendEmailVerification(user,{url:new URL('verify-email.html',location.href).href}),
+  send:user=>sendEmailVerification(user,emailActionSettings('verify-email.html',location.href)),
 });
 export const verificationEmailState=uid=>verificationDelivery.state(uid);
 export const verificationEmailWait=uid=>verificationDelivery.remaining(uid);
@@ -38,7 +39,7 @@ export async function registerEmail(values) {
   return user;
 }
 export function requestPasswordReset(email) {
-  requireConfigured();return sendPasswordResetEmail(auth,email.trim(),{url:new URL('login.html',location.href).href});
+  requireConfigured();return sendPasswordResetEmail(auth,email.trim(),emailActionSettings('login.html',location.href));
 }
 export async function requestEmailVerification() {
   requireConfigured();await auth.authStateReady();if(!auth.currentUser)unavailable('auth/session-required');

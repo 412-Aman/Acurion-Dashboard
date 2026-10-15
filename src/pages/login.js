@@ -22,7 +22,7 @@ const providerButtons=()=>`<div class="auth-providers">${AUTH_PROVIDERS.map(prov
 const loginForm=()=>`${providerButtons()}<form id="auth-form"><label class="field" for="email">Work email<input type="email" id="email" name="email" class="input" autocomplete="email" placeholder="you@institution.com" required></label>${passwordField('Password','password','current-password')}<a class="auth-forgot text-button" href="forgot-password.html">Forgot password?</a><button class="btn-primary auth-submit" type="submit">Sign in</button></form><p class="auth-switch">New to Acurion? <a href="signup.html" class="text-button">Create an account</a></p>`;
 const signupForm=()=>`${providerButtons()}<form id="auth-form"><label class="field" for="name">Full name<input class="input" id="name" name="name" autocomplete="name" required maxlength="100" placeholder="Your name"></label><label class="field" for="email">Work email<input type="email" class="input" id="email" name="email" autocomplete="email" required placeholder="you@institution.com"></label>${passwordField('Password','password','new-password')}${passwordField('Confirm password','confirmation','new-password')}<p class="auth-hint">Use at least 12 characters. Your workspace administrator manages data access.</p><button class="btn-primary auth-submit" type="submit">Create account</button></form><p class="auth-switch">Already have an account? <a href="login.html" class="text-button">Sign in</a></p>`;
 const forgotForm=()=>`<form id="auth-form"><label class="field" for="email">Work email<input type="email" class="input" id="email" name="email" autocomplete="email" placeholder="you@institution.com" required></label><button class="btn-primary auth-submit" type="submit">Send reset link</button></form><p class="auth-switch"><a class="text-button" href="login.html">Back to sign in</a></p>`;
-const verifyForm=()=>`<div class="auth-verification-icon">${icon('mail',26)}</div><p class="auth-hint" id="verify-description">Checking your signed-in account…</p><p class="auth-hint" id="verification-delivery-status" role="status" aria-live="polite"></p><div class="auth-verification-actions"><button class="btn-primary" id="check-verification" disabled>I’ve verified my email</button><button class="btn-ghost" id="resend-verification" disabled>Send verification email</button><button class="text-button" id="change-account">Use a different account</button></div>`;
+const verifyForm=()=>`<div class="auth-verification-icon">${icon('mail',26)}</div><p class="auth-hint" id="verify-description">Checking your signed-in account…</p><p class="auth-hint" id="verification-delivery-status" role="status" aria-live="polite"></p><details class="auth-hint" id="verification-delivery-details" hidden><summary>Delivery details</summary><p id="verification-error-code"></p></details><div class="auth-verification-actions"><button class="btn-primary" id="check-verification" disabled>I’ve verified my email</button><button class="btn-ghost" id="resend-verification" disabled>Send verification email</button><button class="text-button" id="change-account">Use a different account</button></div>`;
 const app=document.getElementById('app');
 app.innerHTML=`<div class="auth-page"><div class="auth-flow" id="login-flow" aria-hidden="true"></div><header class="auth-header"><a href="login.html" class="auth-brand"><span>${icon('shield',22)}</span><strong>ACURION</strong></a><a class="text-button" href="system.html">Workspace status ${icon('chevrons',12)}</a></header><div class="auth-layout"><section class="auth-intro"><span class="section-kicker">FINANCIAL INTELLIGENCE</span><h2>Clarity for every investigation.</h2><p>Follow the activity. Review the evidence. Keep every decision connected.</p><div class="auth-intro-steps">${[['01','Understand the customer','Profiles, due diligence and screening.'],['02','Follow the evidence','Transactions, account paths and risk signals.'],['03','Record the decision','Analyst reviews, case notes and report drafts.']].map(([number,title,detail])=>`<div><span>${number}</span><p><strong>${title}</strong><small>${detail}</small></p></div>`).join('')}</div></section><main class="auth-card" id="auth-card"><span class="auth-card-kicker">YOUR WORKSPACE</span><h1>${labels[mode][0]}</h1><p class="auth-description">${labels[mode][1]}</p><div class="auth-feedback" id="auth-feedback" role="status" aria-live="polite" hidden></div><div id="auth-content">${({login:loginForm,signup:signupForm,forgot:forgotForm,verify:verifyForm,action:()=>'<div class="data-empty" role="status">Checking email link…</div>'})[mode]()}</div>${['login','signup'].includes(mode)?`<div class="auth-demo"><button type="button" class="text-button" id="open-demo">Explore demo workspace →</button><span>Fictional records. No bank connection.</span></div>`:''}</main></div><footer class="auth-footer"><span>Acurion / Analyst workspace</span><span>Customer context. Connected evidence.</span></footer></div>`;
 mountGatewayFlow(document.getElementById('login-flow'));
@@ -38,7 +38,7 @@ function setBusy(value,button,label) {
 }
 function reportError(error) {
   const message=mode==='verify' && error.code==='auth/too-many-requests'
-    ? 'Firebase has temporarily limited verification emails. No new email was sent. Check your inbox and spam folder for the first message, and wait before requesting another. Firebase may require a longer wait.'
+    ? 'Firebase rejected this verification email request because of a rate limit. Delivery of earlier emails is unconfirmed. Wait before trying again; Firebase may require a longer wait.'
     : error.code?authErrorMessage(error):error.message||authErrorMessage(error);
   feedback(message,{error:true});
 }
@@ -51,12 +51,16 @@ function updateVerificationControls() {
   const status=document.getElementById('verification-delivery-status');
   const delivery=state?.status||params.get('delivery');
   const message=!user?'':user.emailVerified?'Your email is verified. You can continue to your workspace.':({
-    sent:'Verification email sent. Check your inbox and spam folder before requesting another.',
-    sending:'A verification request was made recently. Check your inbox and spam folder while it completes.',
-    'rate-limited':'Firebase has temporarily limited verification emails. Check for an earlier email. The retry timer is an app precaution; Firebase’s limit may last longer.',
-    failed:'Your account exists, but the verification email could not be sent. Wait before trying again. You do not need to register again.',
+    sent:'Firebase accepted the verification email request. Inbox delivery is unconfirmed. Finish verification from the email, then return here to continue.',
+    sending:'A verification request was made recently. Its delivery is unconfirmed. Wait before making another request.',
+    'rate-limited':'Firebase rejected the last verification request because of rate limits. Delivery of earlier emails is unconfirmed. The retry timer is an app precaution; Firebase’s limit may last longer.',
+    failed:`The verification email request failed. ${state?.errorCode?authErrorMessage(state.errorCode):'Wait before trying again.'} You do not need to register again.`,
   })[delivery]||'Request a verification email when you are ready. No email is sent just by opening this page.';
   if(status.textContent!==message)status.textContent=message;
+  const details=document.getElementById('verification-delivery-details'),code=document.getElementById('verification-error-code');
+  details.hidden=!user||user.emailVerified||!state?.errorCode;
+  const detail=details.hidden?'':`Firebase error: ${state.errorCode}. Share this code with your workspace administrator.`;
+  if(code.textContent!==detail)code.textContent=detail;
 }
 function enterWorkspace(user) {
   try{sessionStorage.removeItem('acurion:demo');}catch{}
@@ -96,7 +100,7 @@ document.getElementById('auth-form')?.addEventListener('submit',event=>{
 });
 
 if(mode==='verify'){
-  document.getElementById('resend-verification').onclick=event=>perform(event.currentTarget,'Sending email…',async()=>{await requestEmailVerification();feedback('Verification email sent. Check your inbox and spam folder.');});
+  document.getElementById('resend-verification').onclick=event=>perform(event.currentTarget,'Sending email…',async()=>{await requestEmailVerification();feedback('Firebase accepted the verification email request. Check your inbox and spam folder.');});
   document.getElementById('check-verification').onclick=event=>perform(event.currentTarget,'Checking…',async()=>{const user=await refreshVerifiedUser();if(user.emailVerified)enterWorkspace(user);else feedback('Your email has not been verified yet. Open the email link and try again.',{error:true});});
   document.getElementById('change-account').onclick=async()=>{if(busy)return;try{await endAuthSession();navigateSmoothly('login.html',{replace:true});}catch(error){reportError(error);}};
   let verificationTimer;

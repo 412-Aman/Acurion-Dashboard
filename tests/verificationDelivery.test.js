@@ -28,7 +28,14 @@ test('delivery failures never claim success and allow a deliberate retry after a
   let sends=0;const f=fixture(async()=>{if(++sends===1)throw Object.assign(new Error('offline'),{code:'auth/network-request-failed'});});
   await assert.rejects(f.delivery.request(user),{code:'auth/network-request-failed'});
   assert.equal(f.delivery.state(user.uid).status,'failed');assert.equal(f.delivery.remaining(user.uid),10);
+  assert.equal(f.reload().state(user.uid).errorCode,'auth/network-request-failed');
   f.advance(10_000);await f.delivery.request(user);assert.equal(sends,2);assert.equal(f.delivery.state(user.uid).status,'sent');
+});
+test('the first email error survives reload without persisting raw messages or tokens',async()=>{
+  const f=fixture(async()=>{throw Object.assign(new Error('private token value'),{code:'auth/unauthorized-continue-uri',token:'private token value'});});
+  await assert.rejects(f.delivery.request(user));
+  const saved=f.reload().state(user.uid);assert.equal(saved.errorCode,'auth/unauthorized-continue-uri');
+  assert.doesNotMatch(JSON.stringify(saved),/private|token value/);
 });
 test('cooldowns work without storage and do not leak between accounts or projects',async()=>{
   let sends=0;const f=fixture(async()=>{sends++;});

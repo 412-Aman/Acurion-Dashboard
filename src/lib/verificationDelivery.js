@@ -36,7 +36,8 @@ export function createVerificationDelivery({send,storage,now=Date.now,namespace=
       const result={status:'sent',retryAt:now()+VERIFICATION_RESEND_MS};write(user.uid,result);return result;
     }).catch(error=>{
       const throttled=error.code==='auth/too-many-requests';
-      write(user.uid,{status:throttled?'rate-limited':'failed',retryAt:now()+(throttled?VERIFICATION_THROTTLE_MS:10_000)});
+      const errorCode=/^auth\/[a-z0-9-]{1,70}$/.test(error.code||'')?error.code:'auth/verification-send-failed';
+      write(user.uid,{status:throttled?'rate-limited':'failed',errorCode,retryAt:now()+(throttled?VERIFICATION_THROTTLE_MS:10_000)});
       throw error;
     }).finally(()=>inFlight.delete(user.uid));
     inFlight.set(user.uid,pending);return pending;
