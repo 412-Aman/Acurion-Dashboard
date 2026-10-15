@@ -17,6 +17,10 @@ Start `npm run dev`, open login, and choose **Explore demo workspace**. This is 
 
 The frontend reads at most 500 records per configured RTDB source by default (adjustable from 25 to 2,000), ordered by Firebase key. This is a bounded sample, not full historical pagination or guaranteed chronological recency. Audit combines accessible Firestore and RTDB entries and identifies independent source failures. The graph preserves a transaction-derived view even if optional account/graph enrichment cannot be read.
 
+## Missing records after sign-in
+
+System status shows the signed-in account's UID, the Realtime Database URL and exact paths. Have the project administrator confirm that the records are in Realtime Database, not only Cloud Firestore, and that this specific user is permitted to read the configured paths. Do not open database access to all newly registered accounts as a shortcut. The RTDB SDK may reject `get()` with a plain `Error("Permission denied")` without an error code; the adapter now classifies that as `database/permission-denied` instead of discarding it as `data/read-failed`. Timeouts, network failures and missing indexes remain separate diagnostics. A Firestore audit timeout does not establish whether RTDB transactions exist or are readable.
+
 ## References
 
 - [Realtime Database web reads and writes](https://firebase.google.com/docs/database/web/read-and-write)

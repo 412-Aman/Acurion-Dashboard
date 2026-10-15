@@ -5,7 +5,7 @@ import { auth, db, fs, requireSession } from './firebase.js';
 import { transactions as mockTransactions, alerts as mockAlerts, graphData as mockGraphData, auditLogs as mockAuditLogs } from '../data/mockData.js';
 import { DEMO_MODE, DATA_PATHS, READ_LIMIT } from './config.js';
 import { normalizeAlert, normalizeTransaction, normalizeAuditLog, validateReview, isoTimestamp, finiteNumber } from './dataContracts.js';
-import { setDataStatus, withTimeout } from './dataStatus.js';
+import { setDataStatus, withTimeout, dataErrorCode } from './dataStatus.js';
 import { loadWorkspace } from './complianceStore.js';
 export const USE_FIREBASE = !DEMO_MODE;
 const cache = new Map();
@@ -27,7 +27,7 @@ async function load(resource, path, loader) {
     const count = Array.isArray(value) ? value.length : value?.nodes?.length;
     setDataStatus(resource,{ state:count===0?'empty':'ready', count, lastSuccess:new Date().toISOString(), error:null });
     return value;
-  }).catch(error => { setDataStatus(resource,{ state:'error', error:String(error.code || 'data/read-failed') }); throw error; }).finally(()=>pending.delete(resource));
+  }).catch(error => { setDataStatus(resource,{ state:'error', error:dataErrorCode(error) }); throw error; }).finally(()=>pending.delete(resource));
   pending.set(resource,promise);
   return promise;
 }
@@ -90,7 +90,7 @@ export function getGraphData() {
     // never prevents the transaction-derived graph from being shown.
     const optional=async(resource,path)=>{
       try { const val=await readPath(path);setDataStatus(resource,{state:val?'ready':'empty',path,lastSuccess:new Date().toISOString(),mode:'firebase',error:null});return val; }
-      catch(error){setDataStatus(resource,{state:'error',path,error:String(error.code||'data/read-failed'),mode:'firebase'});return null;}
+      catch(error){setDataStatus(resource,{state:'error',path,error:dataErrorCode(error),mode:'firebase'});return null;}
     };
     const [accounts, graphEdges, shared] = await Promise.all([
       optional('accounts',DATA_PATHS.accounts),optional('graph edges',`${DATA_PATHS.graph}/edges`),optional('shared relationships',`${DATA_PATHS.graph}/relationships`),
@@ -118,7 +118,7 @@ export function getAuditLogs() {
       readPath(DATA_PATHS.audit).then(val=>{rtdb=entries(val).map(([key,data])=>normalizeAuditLog(key,data));setDataStatus('RTDB audit',{state:rtdb.length?'ready':'empty',path:DATA_PATHS.audit,count:rtdb.length,mode:'firebase',lastSuccess:new Date().toISOString(),error:null});}),
       (async()=>{await withTimeout(requireSession());const snap=await withTimeout(getDocs(query(collection(fs,'auditLogs'),orderBy('timestamp','desc'),limit(READ_LIMIT))));firestore=snap.docs.map(doc=>normalizeAuditLog(doc.id,doc.data()));setDataStatus('Firestore audit',{state:firestore.length?'ready':'empty',path:'auditLogs',count:firestore.length,mode:'firebase',lastSuccess:new Date().toISOString(),error:null});})(),
     ]);
-    outcomes.forEach((result,i)=>{if(result.status==='rejected')setDataStatus(i===0?'RTDB audit':'Firestore audit',{state:'error',path:i===0?DATA_PATHS.audit:'auditLogs',mode:'firebase',error:String(result.reason.code||'data/read-failed')});});
+    outcomes.forEach((result,i)=>{if(result.status==='rejected')setDataStatus(i===0?'RTDB audit':'Firestore audit',{state:'error',path:i===0?DATA_PATHS.audit:'auditLogs',mode:'firebase',error:dataErrorCode(result.reason)});});
     if(outcomes.every(r=>r.status==='rejected'))throw outcomes[0].reason;
     return [...new Map([...firestore,...rtdb].map(log=>[log.id,log])).values()];
   });
@@ -140,7 +140,7 @@ export async function saveAlertReview(alert, review) {
     await withTimeout(update(ref(db),changes));
   }
   setDataStatus('alert review write',{state:'ready',lastSuccess:timestamp,error:null});
-  } catch(error) { setDataStatus('alert review write',{state:'error',error:String(error.code||'data/write-failed')});throw error; }
+  } catch(error) { setDataStatus('alert review write',{state:'error',error:dataErrorCode(error,'data/write-failed')});throw error; }
   cache.delete('alerts');cache.delete('audit');
   return {...alert,...patch};
 }
@@ -154,8 +154,8 @@ export function subscribeToUpdates(resource,callback) {
       if(!initial)for(const[key,data]of current)if(!seen.has(key)&&resource==='alerts')callback({type:'new_alert',item:normalizeAlert(key,data)});
       initial=false;seen=new Set(current.map(([key])=>key));cache.delete(resource);
       setDataStatus(`${resource} subscription`,{state:'ready',path:DATA_PATHS[resource]||resource,mode:'firebase',lastSuccess:new Date().toISOString(),error:null});
-    },error=>setDataStatus(`${resource} subscription`,{state:'error',error:String(error.code||'data/read-failed'),mode:'firebase'}));
-  }).catch(error=>{if(!cancelled)setDataStatus(`${resource} subscription`,{state:'error',error:String(error.code||'auth/session-required'),mode:'firebase'});});
+    },error=>setDataStatus(`${resource} subscription`,{state:'error',error:dataErrorCode(error),mode:'firebase'}));
+  }).catch(error=>{if(!cancelled)setDataStatus(`${resource} subscription`,{state:'error',error:dataErrorCode(error,'auth/session-required'),mode:'firebase'});});
   return()=>{cancelled=true;unsubscribe();};
 }
 export async function checkDataConnection() {
