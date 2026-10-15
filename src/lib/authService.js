@@ -32,7 +32,7 @@ export function signInProvider(id) {
 }
 export async function registerEmail(values) {
   requireConfigured();if(!AUTH_SETTINGS.registration)unavailable('auth/signup-disabled');
-  const errors=validateRegistration(values);if(errors.length)throw new Error(errors.join(' '));
+  const errors=validateRegistration(values);if(errors.length)throw Object.assign(new Error(errors.join(' ')),{validation:true});
   const {user}=await createUserWithEmailAndPassword(auth,values.email.trim(),values.password);
   // Account creation does not grant institution roles or data permissions.
   await updateProfile(user,{displayName:values.name.trim()});
@@ -43,6 +43,7 @@ export function requestPasswordReset(email) {
 }
 export async function requestEmailVerification() {
   requireConfigured();await auth.authStateReady();if(!auth.currentUser)unavailable('auth/session-required');
+  if(!auth.currentUser.email)unavailable('auth/missing-email');
   return verificationDelivery.request(auth.currentUser);
 }
 export async function refreshVerifiedUser() {

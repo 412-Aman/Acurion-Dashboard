@@ -20,10 +20,11 @@ test('email sign-in and registration work by default while social providers rema
   const enabled=authSettings({VITE_AUTH_ENABLED:'true',VITE_AUTH_GOOGLE_ENABLED:'true',VITE_AUTH_GITHUB_ENABLED:'true'});
   assert.equal(enabled.providers.google,true);assert.equal(enabled.providers.github,true);assert.equal(enabled.registration,true);
 });
-test('unverified password accounts require verification; OAuth and verified users do not receive a false verification gate',()=>{
+test('unverified accounts require verification regardless of provider, matching verified-email database rules',()=>{
   assert.equal(requiresEmailVerification({emailVerified:false,providerData:[{providerId:'password'}]}),true);
   assert.equal(requiresEmailVerification({emailVerified:true,providerData:[{providerId:'password'}]}),false);
-  assert.equal(requiresEmailVerification({emailVerified:false,providerData:[{providerId:'github.com'}]}),false);
+  assert.equal(requiresEmailVerification({emailVerified:false,providerData:[{providerId:'github.com'}]}),true);
+  assert.equal(requiresEmailVerification({emailVerified:true,providerData:[{providerId:'google.com'}]}),false);
   assert.equal(requiresEmailVerification(null),false);
 });
 test('auth errors do not reveal account existence, credentials or arbitrary server details',()=>{

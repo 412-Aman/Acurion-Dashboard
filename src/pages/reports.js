@@ -5,12 +5,12 @@ import { escapeHTML as esc } from '../components/icons.js';
 import { mountDraftTray } from '../islands/draft-tray.tsx';
 import { getAuditLogs,clearDataCache } from '../lib/dataService.js';
 import { loadWorkspace,saveWorkspace,downloadJSON } from '../lib/complianceStore.js';
-import { DEMO_MODE } from '../lib/config.js';
+import { DEMO_MODE, DATA_PATHS } from '../lib/config.js';
 import { buildCaseReport } from '../lib/caseWorkflow.js';
 import { formatDateTime } from '../lib/utils.js';
 import { renderLoading,renderLoadError } from '../components/dataFeedback.js';
 const main=renderLayout({active:'reports.html',pageTitle:'Reports & audit',pageSubtitle:'Export an investigation from its evidence and inspect recorded activity'});
-main.innerHTML=`<nav class="workspace-tabs" aria-label="Report sections"><a class="selected" href="#cases" data-report-view="cases">Case reports</a><a href="#audit" data-report-view="audit">Audit activity</a><a href="#draft-tray" data-report-view="draft-tray">Working drafts</a></nav><section id="cases"><div class="section-heading"><div><h3>Investigation reports</h3><p class="helper">Browser sandbox drafts. Complete the owner, jurisdiction, narrative and grounds in the case before export.</p></div><a class="btn-ghost" href="compliance.html?view=cases">Open cases →</a></div><div id="case-reports"></div><p class="helper" id="export-message" role="status"></p></section><section id="audit" hidden><div class="section-heading"><div><h3>Audit activity</h3><p class="helper">Source events and browser sandbox actions are labelled separately. Browser logs are not immutable.</p></div><button class="btn-ghost" id="export-audit" disabled>Export loaded CSV</button></div><div id="audit-results"></div></section><section id="draft-tray" hidden></section>`;
+main.innerHTML=`<nav class="workspace-tabs" aria-label="Report sections"><a class="selected" href="#cases" data-report-view="cases">Case reports</a><a href="#audit" data-report-view="audit">Audit activity</a><a href="#draft-tray" data-report-view="draft-tray">Working drafts</a></nav><section id="cases"><div class="section-heading"><div><h3>Investigation reports</h3><p class="helper">Browser sandbox drafts. Complete the owner, jurisdiction, narrative and grounds in the case before export.</p></div><a class="btn-ghost" href="compliance.html?view=cases">Open cases →</a></div><div id="case-reports"></div><p class="helper" id="export-message" role="status"></p></section><section id="audit" hidden><div class="section-heading"><div><h3>Audit activity</h3><p class="helper">Source events and browser sandbox actions are labelled separately. Browser logs are not immutable.</p></div><button class="btn-ghost" id="export-audit" data-tooltip="Exports only the audit rows loaded in this view. Browser sandbox events are labelled separately from Firebase events." disabled>Export loaded CSV</button></div><div id="audit-results"></div></section><section id="draft-tray" hidden></section>`;
 mountDraftTray(document.getElementById('draft-tray'));
 let allLogs=[];
 function renderCases(){
@@ -19,13 +19,13 @@ function renderCases(){
   }catch(error){renderLoadError(document.getElementById('case-reports'),error,renderCases);}
 }
 async function renderAudit(){
-  const result=document.getElementById('audit-results');renderLoading(result,'audit activity');
+  const result=document.getElementById('audit-results');document.getElementById('export-audit').disabled=true;allLogs=[];renderLoading(result,'audit activity');
   let sandbox=[];
   try{sandbox=loadWorkspace().audit.map(a=>({id:a.id,timestamp:a.at,action:a.action,actor:a.actor,detail:a.detail,source:'Browser sandbox'}));}catch{}
   try{const logs=await getAuditLogs();allLogs=[...logs.map(l=>({...l,source:DEMO_MODE?'Demo transaction source':'Firebase transaction source'})),...sandbox].sort((a,b)=>(Date.parse(b.timestamp)||0)-(Date.parse(a.timestamp)||0));}
-  catch(error){allLogs=sandbox;renderLoadError(result,error,()=>{clearDataCache();renderAudit();});if(!sandbox.length)return;result.insertAdjacentHTML('beforeend','<p class="helper">Browser sandbox activity remains available below.</p>');}
+  catch(error){allLogs=sandbox;renderLoadError(result,error,()=>{clearDataCache();renderAudit();},{path:DATA_PATHS.audit});if(!sandbox.length)return;result.insertAdjacentHTML('beforeend','<p class="helper">Browser sandbox activity remains available below.</p>');}
   const table=`<div class="card !p-0 table-wrap"><table class="workspace-table"><thead><tr><th>Time</th><th>Source</th><th>Action</th><th>Reference / detail</th><th>Actor</th></tr></thead><tbody>${allLogs.map(l=>`<tr><td>${formatDateTime(l.timestamp)}</td><td>${esc(l.source)}</td><td>${esc(l.action)}</td><td>${esc(l.alertId||l.transactionId||'')}<small>${esc(l.detail||'')}</small></td><td>${esc(l.actor)}</td></tr>`).join('')}</tbody></table></div>`;
-  if(result.querySelector('[role="alert"]'))result.insertAdjacentHTML('beforeend',table);else result.innerHTML=allLogs.length?table:'<div class="card data-empty">No audit events in this source.</div>';
+  if(result.querySelector('[role="alert"]'))result.insertAdjacentHTML('beforeend',table);else result.innerHTML=allLogs.length?table:'<div class="card data-empty">Connection succeeded. No audit events have been recorded at this source yet. Viewing an alert does not create an audit event; a successful review save does.</div>';
   document.getElementById('export-audit').disabled=!allLogs.length;
 }
 function showView(){const view=['cases','audit','draft-tray'].includes(location.hash.slice(1))?location.hash.slice(1):'cases';for(const id of ['cases','audit','draft-tray'])document.getElementById(id).hidden=id!==view;main.querySelectorAll('[data-report-view]').forEach(link=>{link.classList.toggle('selected',link.dataset.reportView===view);link.setAttribute('aria-current',link.dataset.reportView===view?'page':'false');});if(view==='audit')renderAudit();}

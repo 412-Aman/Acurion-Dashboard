@@ -55,7 +55,7 @@ Automatic feed updates, live news ingestion, secure server storage and goAML sub
 
 ## Integrated React components
 
-The app now also supports React 19 / TypeScript islands and a shadcn-compatible component folder. The navigation keeps all main pages visible in stable Investigate, Due diligence and Manage groups, with direct rail shortcuts and breadcrumbs. Header notifications use Live Notification Feed; the login and overview use Gateway Flow; **Reports & audit → Working drafts** includes HoldButton and Shredder with recoverable disposal.
+The app now also supports React 19 / TypeScript islands and a shadcn-compatible component folder. A single header opens a reorderable workspace map with every destination, workflow context and keyboard access. This replaces the permanent sidebar and duplicate shortcut rail. Header notifications use Live Notification Feed; the login and overview use Gateway Flow; **Reports & audit → Working drafts** includes HoldButton and Shredder with recoverable disposal.
 
 See [component integration notes](docs/COMPONENT_INTEGRATION.md) for exact source provenance, dependencies, setup and validation.
 
@@ -77,4 +77,7 @@ Model training, calibration, evaluation and SHAP/GNN explanation generation rema
 
 The auth pages share the dashboard's monochrome layout. Email sign-in, registration, recovery and email verification use the configured Firebase project by default. The Google/GitHub providers remain opt-in through client flags and require their Firebase setup. [Authentication and motion setup](docs/AUTH_AND_MOTION.md) lists the required settings, provider prerequisites and validation limits.
 
-Buttons have eased hover, press and focus states. Page changes fade smoothly, local views remain responsive during animation, and the sidebar selection glides between destinations. Rapid clicks select the latest destination. Reduced-motion preferences are respected.
+Buttons have eased hover, press and focus states. Page changes fade smoothly, local views remain responsive during animation, and the workspace map uses smooth pointer and keyboard reordering. Rapid clicks select the latest destination. Reduced-motion preferences are respected.
+
+
+The UI components live in `src/components/ui`, resolved through the existing `@/components/ui` alias and `components.json`. Tailwind 4 and TypeScript are already configured; no shadcn project reinitialization is needed. Sortable powers the workspace map. ChangelogTimeline shows actual product notes on System status, separately from customer audit events. Styling is in `src/styles/main.css`; the supplied tokens use neutral accents to match Acurion.

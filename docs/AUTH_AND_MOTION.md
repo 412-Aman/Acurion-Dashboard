@@ -24,7 +24,7 @@ To use the existing project or connect a replacement:
 6. In Firebase email templates, set the custom action URL to the deployed `auth-action.html`. Verify the complete reset/verification links retain Firebase's `mode` and `oobCode` query parameters. The app's continue URLs must be authorized.
 7. Restart/rebuild after changing flags. Frontend flags alone do not enable providers in Firebase.
 
-With auth enabled, password accounts must verify their email before entering the workspace. OAuth identity or successful registration does not grant data access. Server rules must enforce roles, institution membership and permissions independently. Provider collisions direct the user to their original sign-in method; the app does not silently link accounts.
+With auth enabled, all accounts must verify their email, including OAuth accounts whose provider does not supply verified email status, before entering the workspace. OAuth identity or successful registration does not grant data access. Server rules must enforce roles, institution membership and permissions independently. Provider collisions direct the user to their original sign-in method; the app does not silently link accounts.
 
 Signup sends one verification request, then carries its delivery result to the verification page. A successful send starts a 60-second resend cooldown; Firebase's `auth/too-many-requests` starts a five-minute local backoff. Account/project-scoped delivery status persists across refreshes when browser storage is available, with an in-memory fallback. Pending requests share one promise, and the app never retries automatically. Firebase's actual restriction can outlast this local timer; the app does not promise that waiting five minutes removes it. Send failures remain visible and do not require creating the account again. Verification status checking remains available during the resend cooldown.
 
@@ -34,11 +34,13 @@ An email sign-in attempt with deliberately invalid synthetic credentials reached
 
 ## Motion behavior
 
-Shared button states use approximately 220 ms easing, with short press feedback. Page content fades in over 280 ms, auth cards over 320 ms, and the sidebar selection moves over 360 ms. Full-page navigation has a short 120 ms content exit. The sidebar remains usable during that exit, and a subsequent click updates the pending destination.
+Shared button states use approximately 220 ms easing. Page content fades in over 280 ms, auth cards over 320 ms, and full-page navigation has a short 120 ms content exit. Rapid navigation keeps the latest destination.
 
-Local compliance views and report tabs update live, then animate their content. A persistent marker moves without rebuilding the navigation. Full-page links remember its last rendered position so it glides to the next destination. Back/forward cache restoration clears any obsolete exit animation. Modified-click, download and external-link semantics are preserved.
+The permanent sidebar and shortcut rail have been replaced by one header and an accessible workspace map. Open the map with its header button or **M** while outside text fields. Command/Control K opens search. Reorder destinations using pointer handles or Space, arrow keys, Space to drop, and Escape to cancel. Only route IDs from the known destination list are accepted from local storage. The order is personal to this browser; resetting it does not change financial records.
 
-The application respects `prefers-reduced-motion`: page animations and sidebar transitions are disabled. React HoldButton retains its required hold-to-confirm behavior.
+Local compliance views and report tabs update live, then animate their content. Back/forward cache restoration clears obsolete exit animations. Modified-click, download and external-link semantics are preserved. Reduced-motion preferences disable decorative animations and reordering animations. HoldButton retains its required hold-to-confirm behavior.
+
+Tooltips open on pointer hover and keyboard focus, close on Escape, and remain readable when hovered. They use the browser top layer so modal dialogs do not clip them. Tooltips supplement persistent labels and actionable inline errors.
 
 ## Primary references
 

@@ -123,7 +123,7 @@ export function getAuditLogs() {
   });
 }
 export async function saveAlertReview(alert, review) {
-  const errors=validateReview(review);if(errors.length)throw new Error(errors.join(' '));
+  const errors=validateReview(review);if(errors.length)throw Object.assign(new Error(errors.join(' ')),{code:'data/invalid-review'});
   const timestamp=new Date().toISOString();
   const actor=DEMO_MODE?'demo:analyst':(await withTimeout(requireSession())).uid;
   const patch={status:review.status,owner:review.owner.trim(),disposition:review.disposition||'',analystNote:review.note.trim(),reviewedAt:timestamp,reviewedBy:actor};

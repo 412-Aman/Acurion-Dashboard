@@ -23,7 +23,7 @@ System status shows the signed-in account's UID, the Realtime Database URL and e
 
 ## Read-only audit access for the current prototype
 
-The team's published rules currently permit reads of transactions and alerts only. For the administrator to add audit viewing, use [the read-only rules example](../firebase/database.rules.readonly.example.json). Replace `REPLACE_WITH_YOUR_FIREBASE_UID` with the approved analyst's **Account ID** from System status, then review and publish it under **Realtime Database → Rules** in the existing project. The example preserves the existing transaction/alert rules and grants audit reads only to that chosen UID. It has not been published automatically. The existing broad transaction/alert reads are appropriate only to the team's current prototype access decision; institutional data needs approved-user access throughout.
+Use [the read-only rules example](../firebase/database.rules.readonly.example.json) for approved, verified accounts. In **Realtime Database → Data**, add `approvedUsers/<Firebase Authentication UID>: true` for **each** teammate who should read records. Adding only the administrator UID permits only that account. This entry grants record access, not Firebase administrator privileges. Verify the account's email, review the example, and publish it under **Realtime Database → Rules**. The browser cannot edit this approval list. No rules are published automatically. The example also allows optional account and graph enrichment reads; missing data returns an empty result.
 
 After publishing, refresh the app and check the audit source. `ready` means audit records were read; `empty` means the authorized path has no records. The rules keep all client writes disabled, so analyst review saving and new audit-event creation remain unavailable until an approved write policy is implemented. Do not fabricate historical audit entries to remove an empty state. This example does not provide immutable institutional audit storage.
 
@@ -34,3 +34,10 @@ After publishing, refresh the app and check the audit source. `ready` means audi
 - [REST authentication](https://firebase.google.com/docs/database/rest/auth)
 
 No Firebase project, billing plan, remote data or access rules were changed by this task.
+
+
+## Actionable access messages
+
+Acurion distinguishes signed-out sessions, unverified email, expired sessions, database access denial, connection errors and rejected review writes. A verified account receiving permission-denied is directed to ask the administrator to check its UID approval and the specific source path. The browser cannot inspect denied rules, so it does not claim which rule failed. Technical details contain safe diagnostic codes, never raw server responses or credentials.
+
+The read-only example blocks saving analyst reviews. Acurion saves review fields and a new audit entry in one RTDB update; both paths need validated analyst permissions for that operation. A write timeout means the save was not confirmed, so check the alert and audit activity before retrying.
