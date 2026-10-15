@@ -1,21 +1,22 @@
 // Browser-visible settings only; provider secrets stay in the Firebase console.
 export const AUTH_PROVIDERS = [
-  {id:'google',label:'Google',providerId:'google.com',flag:'VITE_AUTH_GOOGLE_ENABLED'},
-  {id:'github',label:'GitHub',providerId:'github.com',flag:'VITE_AUTH_GITHUB_ENABLED'},
+  {id:'google',label:'Google',providerId:'google.com'},
+  {id:'github',label:'GitHub',providerId:'github.com'},
 ];
 export function authSettings(env) {
   return {
     // Email sign-in uses the configured Firebase project unless explicitly paused.
     enabled:env.VITE_AUTH_ENABLED!=='false',
     registration:env.VITE_AUTH_SIGNUP_ENABLED!=='false',
-    providers:Object.fromEntries(AUTH_PROVIDERS.map(provider=>[provider.id,env[provider.flag]==='true'])),
+    // Firebase owns provider availability. Old build flags must not block enabled providers.
+    providers:Object.fromEntries(AUTH_PROVIDERS.map(provider=>[provider.id,true])),
   };
 }
 export function authErrorMessage(error) {
   const code=String(typeof error==='string'?error:error?.code||'');
   const messages={
     'auth/not-configured':'Sign-in is not available for this workspace yet. You can explore the demo while setup is completed.',
-    'auth/provider-not-configured':'This sign-in provider has not been enabled for this website. Use email sign-in, or ask your administrator to enable this provider after completing its Firebase setup.',
+    'auth/unsupported-provider':'Choose Google, GitHub or email to sign in. This sign-in provider is not supported by Acurion.',
     'auth/signup-disabled':'Registration is not available yet. Ask your workspace administrator for access, or explore the demo.',
     'auth/invalid-email':'Enter a valid email address.',
     'auth/invalid-credential':'The email or password is incorrect. Please try again.',

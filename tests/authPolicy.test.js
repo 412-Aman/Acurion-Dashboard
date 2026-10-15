@@ -13,12 +13,14 @@ test('auth return destinations reject external URLs and non-workspace routes',()
   assert.equal(safeReturnPath('compliance.html?view=cases&case=CASE-1',origin),'compliance.html?view=cases&case=CASE-1');
   assert.equal(safeReturnPath('/reports.html#draft-tray',origin),'reports.html#draft-tray');
 });
-test('email sign-in and registration work by default while social providers remain opt-in',()=>{
-  const defaults=authSettings({});assert.equal(defaults.enabled,true);assert.equal(defaults.registration,true);assert.ok(Object.values(defaults.providers).every(value=>value===false));
+test('supported social providers reach Firebase even when old build flags are false',()=>{
+  const defaults=authSettings({});assert.equal(defaults.enabled,true);assert.equal(defaults.registration,true);assert.ok(Object.values(defaults.providers).every(value=>value===true));
   assert.equal(authSettings({VITE_AUTH_ENABLED:'false'}).enabled,false);
   assert.equal(authSettings({VITE_AUTH_SIGNUP_ENABLED:'false'}).registration,false);
-  const enabled=authSettings({VITE_AUTH_ENABLED:'true',VITE_AUTH_GOOGLE_ENABLED:'true',VITE_AUTH_GITHUB_ENABLED:'true'});
-  assert.equal(enabled.providers.google,true);assert.equal(enabled.providers.github,true);assert.equal(enabled.registration,true);
+  for(const flag of ['false','true','']){
+    const enabled=authSettings({VITE_AUTH_ENABLED:'true',VITE_AUTH_GOOGLE_ENABLED:flag,VITE_AUTH_GITHUB_ENABLED:flag});
+    assert.equal(enabled.providers.google,true);assert.equal(enabled.providers.github,true);assert.equal(enabled.registration,true);
+  }
 });
 test('unverified accounts require verification regardless of provider, matching verified-email database rules',()=>{
   assert.equal(requiresEmailVerification({emailVerified:false,providerData:[{providerId:'password'}]}),true);

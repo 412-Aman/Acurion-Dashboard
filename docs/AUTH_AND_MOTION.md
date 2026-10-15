@@ -12,17 +12,17 @@ The Firebase SDK performs these operations. No mock authentication success is di
 
 ## Authentication activation
 
-The existing `acurion-2bd21` web configuration is built in. Email sign-in and registration are enabled by default, matching the team's request to use Email/Password in that project. Set `VITE_AUTH_ENABLED=false` only to pause client auth actions, or `VITE_AUTH_SIGNUP_ENABLED=false` to disable client registration. Existing environment files with the old false values must be updated and the site rebuilt. Social-provider flags still default to false. **Explore demo workspace** remains available for fictional records.
+The existing `acurion-2bd21` web configuration is built in. Email sign-in and registration are enabled by default, matching the team's request to use Email/Password in that project. Set `VITE_AUTH_ENABLED=false` only to pause client auth actions, or `VITE_AUTH_SIGNUP_ENABLED=false` to disable client registration. Existing environment files that pause email authentication or registration must be updated and the site rebuilt. Google and GitHub availability is controlled by Firebase; legacy provider flags are ignored. **Explore demo workspace** remains available for fictional records.
 
 To use the existing project or connect a replacement:
 
 1. Keep the built-in configuration for `acurion-2bd21`, or fill a replacement project's complete public web-app configuration in `.env.local` as described in [Firebase setup](FIREBASE_SETUP.md).
 2. Enable Email/Password in Firebase Authentication. Set `VITE_AUTH_ENABLED=true` and `VITE_AUTH_SIGNUP_ENABLED=true` if overriding older disabled environment settings. Set signup false only for administrator-provisioned accounts.
 3. Add the deployed application domain to Firebase Authentication's authorized domains. Add localhost explicitly for local provider testing if needed.
-4. Enable Google in the Firebase console and configure the project's support email. Set `VITE_AUTH_GOOGLE_ENABLED=true`.
-5. For GitHub, create an OAuth application and use the exact callback URL displayed by Firebase (normally `https://<auth-domain>/__/auth/handler`). Put its client ID and client secret in the Firebase console, then set `VITE_AUTH_GITHUB_ENABLED=true`. The app adds no repository-access scopes.
+4. Enable Google in the Firebase console and configure the project's support email. Google sign-in is available in the frontend; no separate provider build flag is required.
+5. For GitHub, create an OAuth application and use the exact callback URL displayed by Firebase (normally `https://<auth-domain>/__/auth/handler`). Put its client ID and client secret in the Firebase console. No separate provider build flag is required. The app adds no repository-access scopes.
 6. In Firebase email templates, set the custom action URL to the deployed `auth-action.html`. Verify the complete reset/verification links retain Firebase's `mode` and `oobCode` query parameters. The app's continue URLs must be authorized.
-7. Restart/rebuild after changing flags. Frontend flags alone do not enable providers in Firebase.
+7. Restart/rebuild after changing flags. Google and GitHub availability is controlled by Firebase. Legacy VITE_AUTH_GOOGLE_ENABLED and VITE_AUTH_GITHUB_ENABLED values are ignored, including old false values in hosting settings.
 
 With auth enabled, all accounts must verify their email, including OAuth accounts whose provider does not supply verified email status, before entering the workspace. OAuth identity or successful registration does not grant data access. Server rules must enforce roles, institution membership and permissions independently. Provider collisions direct the user to their original sign-in method; the app does not silently link accounts.
 
@@ -54,3 +54,6 @@ Tooltips open on pointer hover and keyboard focus, close on Escape, and remain r
 ## Transaction activity visualisation
 
 Overview loads ContributionSkyline in a separate chunk. It uses the bounded transaction read already shared by the dashboard. The scene stops requesting animation frames when settled or when the page is hidden, caps device pixel ratio at two, and keeps its height within a dashboard panel. Reduced motion jumps directly between flat and 3D views. Empty or undated data does not trigger generated activity.
+
+
+Google and GitHub buttons call Firebase directly after the workspace configuration check. Their tooltips describe the actual sign-in action instead of inferring provider availability from build flags. Firebase still enforces provider configuration, authorized domains and database access; unsupported provider IDs are rejected locally.

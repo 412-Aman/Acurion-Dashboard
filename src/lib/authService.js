@@ -22,9 +22,8 @@ export function signInEmail(email,password) {
 }
 export function signInProvider(id) {
   requireConfigured();
-  if(!AUTH_SETTINGS.providers[id])unavailable('auth/provider-not-configured');
   const provider=id==='google'?new GoogleAuthProvider():id==='github'?new GithubAuthProvider():null;
-  if(!provider)unavailable('auth/provider-not-configured');
+  if(!provider)unavailable('auth/unsupported-provider');
   if(id==='google')provider.setCustomParameters({prompt:'select_account'});
   // Called directly from the click gesture, with no await before the popup.
   // No repository, profile-management or other unrelated OAuth scopes are added.
