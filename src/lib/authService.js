@@ -1,4 +1,4 @@
-import { GoogleAuthProvider,GithubAuthProvider,OAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,sendEmailVerification,updateProfile,reload,verifyPasswordResetCode,confirmPasswordReset,applyActionCode,checkActionCode,signOut } from 'firebase/auth';
+import { GoogleAuthProvider,GithubAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,sendEmailVerification,updateProfile,reload,verifyPasswordResetCode,confirmPasswordReset,applyActionCode,checkActionCode,signOut } from 'firebase/auth';
 import { auth,configurationIssues } from './firebase.js';
 import { authSettings,validateRegistration } from './authPolicy.js';
 export const AUTH_SETTINGS=authSettings(import.meta.env);
@@ -13,10 +13,9 @@ export function signInEmail(email,password) {
 export function signInProvider(id) {
   requireConfigured();
   if(!AUTH_SETTINGS.providers[id])unavailable('auth/provider-not-configured');
-  const provider=id==='google'?new GoogleAuthProvider():id==='github'?new GithubAuthProvider():id==='apple'?new OAuthProvider('apple.com'):null;
+  const provider=id==='google'?new GoogleAuthProvider():id==='github'?new GithubAuthProvider():null;
   if(!provider)unavailable('auth/provider-not-configured');
   if(id==='google')provider.setCustomParameters({prompt:'select_account'});
-  if(id==='apple'){provider.addScope('email');provider.addScope('name');}
   // Called directly from the click gesture, with no await before the popup.
   // No repository, profile-management or other unrelated OAuth scopes are added.
   return signInWithPopup(auth,provider);

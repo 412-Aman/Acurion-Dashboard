@@ -2,7 +2,7 @@
 
 ## Implemented pages
 
-- `login.html`: email/password, Google, GitHub and Apple sign-in; explicit fictional demo entry.
+- `login.html`: email/password, Google and GitHub sign-in; explicit fictional demo entry.
 - `signup.html`: optional email registration, name, password confirmation and verification email.
 - `forgot-password.html`: recovery email request with a response that does not disclose account existence.
 - `verify-email.html`: resend verification, refresh verified status and change account.
@@ -10,24 +10,23 @@
 
 The Firebase SDK performs these operations. No mock authentication success is displayed. Popup cancellation, disabled providers, network failures, invalid credentials and expired links have readable error states. The frontend registration/reset minimum is 12 characters; the Firebase project's password policy should enforce the institution's actual requirements.
 
-## Deferred activation
+## Authentication activation
 
-The replacement Firebase project remains deferred. All auth flags default to false in `.env.example`; local review uses **Explore demo workspace**. Existing backend credentials were not changed, and no accounts, OAuth apps, email messages or paid services were created during this work.
+The existing `acurion-2bd21` web configuration is built in. Email sign-in and registration are enabled by default, matching the team's request to use Email/Password in that project. Set `VITE_AUTH_ENABLED=false` only to pause client auth actions, or `VITE_AUTH_SIGNUP_ENABLED=false` to disable client registration. Existing environment files with the old false values must be updated and the site rebuilt. Social-provider flags still default to false. **Explore demo workspace** remains available for fictional records.
 
-When the project is ready:
+To use the existing project or connect a replacement:
 
-1. Fill its public web-app configuration in `.env.local` as described in [Firebase setup](FIREBASE_SETUP.md).
-2. Enable Email/Password in Firebase Authentication, then set `VITE_AUTH_ENABLED=true`. Set `VITE_AUTH_SIGNUP_ENABLED=true` only if user registration is intended.
+1. Keep the built-in configuration for `acurion-2bd21`, or fill a replacement project's complete public web-app configuration in `.env.local` as described in [Firebase setup](FIREBASE_SETUP.md).
+2. Enable Email/Password in Firebase Authentication. Set `VITE_AUTH_ENABLED=true` and `VITE_AUTH_SIGNUP_ENABLED=true` if overriding older disabled environment settings. Set signup false only for administrator-provisioned accounts.
 3. Add the deployed application domain to Firebase Authentication's authorized domains. Add localhost explicitly for local provider testing if needed.
 4. Enable Google in the Firebase console and configure the project's support email. Set `VITE_AUTH_GOOGLE_ENABLED=true`.
 5. For GitHub, create an OAuth application and use the exact callback URL displayed by Firebase (normally `https://<auth-domain>/__/auth/handler`). Put its client ID and client secret in the Firebase console, then set `VITE_AUTH_GITHUB_ENABLED=true`. The app adds no repository-access scopes.
-6. Apple is optional. Firebase's [Apple provider instructions](https://firebase.google.com/docs/auth/web/apple) require Apple Developer Program membership and Apple configuration, including a Services ID and private signing credentials. Use an existing membership if available; leave `VITE_AUTH_APPLE_ENABLED=false` otherwise. Do not put private keys or provider secrets in VITE variables.
-7. In Firebase email templates, set the custom action URL to the deployed `auth-action.html`. Verify the complete reset/verification links retain Firebase's `mode` and `oobCode` query parameters. The app's continue URLs must be authorized.
-8. Restart/rebuild after changing flags. Frontend flags alone do not enable providers in Firebase.
+6. In Firebase email templates, set the custom action URL to the deployed `auth-action.html`. Verify the complete reset/verification links retain Firebase's `mode` and `oobCode` query parameters. The app's continue URLs must be authorized.
+7. Restart/rebuild after changing flags. Frontend flags alone do not enable providers in Firebase.
 
 With auth enabled, password accounts must verify their email before entering the workspace. OAuth identity or successful registration does not grant data access. Server rules must enforce roles, institution membership and permissions independently. Provider collisions direct the user to their original sign-in method; the app does not silently link accounts.
 
-Google/GitHub/Apple account consent and real reset/verification emails require validation after project activation. The current browser checks cover deferred configuration, validation, page navigation and safe demo access; they do not prove a live OAuth round trip.
+An email sign-in attempt with deliberately invalid synthetic credentials reached the existing project's Firebase Authentication and returned the expected incorrect-credentials response. This verifies that the client no longer blocks email sign-in before the SDK request; it does not prove a successful login with a real account. Google/GitHub account consent and real reset/verification emails require validation after provider activation.
 
 ## Motion behavior
 
@@ -41,7 +40,6 @@ The application respects `prefers-reduced-motion`: page animations and sidebar t
 
 - [Google sign-in](https://firebase.google.com/docs/auth/web/google-signin)
 - [GitHub sign-in](https://firebase.google.com/docs/auth/web/github-auth)
-- [Apple sign-in](https://firebase.google.com/docs/auth/web/apple)
 - [Password authentication](https://firebase.google.com/docs/auth/web/password-auth)
 - [User management and email verification](https://firebase.google.com/docs/auth/web/manage-users)
 - [Custom email action handlers](https://firebase.google.com/docs/auth/custom-email-handler)

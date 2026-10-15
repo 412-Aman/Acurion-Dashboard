@@ -2,12 +2,12 @@
 export const AUTH_PROVIDERS = [
   {id:'google',label:'Google',providerId:'google.com',flag:'VITE_AUTH_GOOGLE_ENABLED'},
   {id:'github',label:'GitHub',providerId:'github.com',flag:'VITE_AUTH_GITHUB_ENABLED'},
-  {id:'apple',label:'Apple',providerId:'apple.com',flag:'VITE_AUTH_APPLE_ENABLED'},
 ];
 export function authSettings(env) {
   return {
-    enabled:env.VITE_AUTH_ENABLED==='true',
-    registration:env.VITE_AUTH_SIGNUP_ENABLED==='true',
+    // Email sign-in uses the configured Firebase project unless explicitly paused.
+    enabled:env.VITE_AUTH_ENABLED!=='false',
+    registration:env.VITE_AUTH_SIGNUP_ENABLED!=='false',
     providers:Object.fromEntries(AUTH_PROVIDERS.map(provider=>[provider.id,env[provider.flag]==='true'])),
   };
 }

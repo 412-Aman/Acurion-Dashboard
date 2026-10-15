@@ -8,7 +8,7 @@ Start `npm run dev`, open login, and choose **Explore demo workspace**. This is 
 
 ## Connect a project later
 
-1. Create the project's web app; enable Email/Password authentication. Enable client sign-in with `VITE_AUTH_ENABLED=true`. Registration is optional and requires `VITE_AUTH_SIGNUP_ENABLED=true`; keep it disabled for administrator-provisioned accounts. Account creation does not grant institution roles or data permissions. Follow [auth setup](AUTH_AND_MOTION.md) for providers and email actions.
+1. Use the existing project's web app or create a replacement, and enable Email/Password authentication. Client sign-in and registration are enabled by default. For older environments, set `VITE_AUTH_ENABLED=true` and `VITE_AUTH_SIGNUP_ENABLED=true`; disable registration only for administrator-provisioned accounts. Account creation does not grant institution roles or data permissions. Follow [auth setup](AUTH_AND_MOTION.md) for providers and email actions.
 2. Copy `.env.example` to `.env.local` and fill the new project ID, API key, auth domain, exact Realtime Database URL and app ID together. Restart Vite after changing environment values. Local environment files are ignored by Git.
 3. Create/import data into the paths specified by `VITE_FIREBASE_*_PATH`. Transactions, alerts and audit events are separate resources. A model pipeline writing only transactions does not create alerts automatically in live mode.
 4. Restrict read/write access to authorized users and roles using server-enforced Firebase rules. Do not set public read or write just to make records appear. Web client configuration is public identification; Admin/service-account secrets must never be put in VITE variables.

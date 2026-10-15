@@ -75,6 +75,6 @@ Model training, calibration, evaluation and SHAP/GNN explanation generation rema
 
 ## Authentication and motion
 
-The auth pages share the dashboard's monochrome layout. Google, GitHub and Apple buttons use Firebase provider sign-in; registration, recovery and email verification use Firebase Auth. These operations remain disabled until the deferred replacement project is configured. [Authentication and motion setup](docs/AUTH_AND_MOTION.md) lists the required settings, provider prerequisites and validation limits.
+The auth pages share the dashboard's monochrome layout. Email sign-in, registration, recovery and email verification use the configured Firebase project by default. The Google/GitHub providers remain opt-in through client flags and require their Firebase setup. [Authentication and motion setup](docs/AUTH_AND_MOTION.md) lists the required settings, provider prerequisites and validation limits.
 
 Buttons have eased hover, press and focus states. Page changes fade smoothly, local views remain responsive during animation, and the sidebar selection glides between destinations. Rapid clicks select the latest destination. Reduced-motion preferences are respected.
