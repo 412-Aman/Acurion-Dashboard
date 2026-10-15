@@ -26,7 +26,7 @@ IDs, amount, currency and a valid ISO timestamp with a timezone are required. Ex
 
 ## Live transaction source
 
-The adapter reads keyed objects from `/transactions` by default. Canonical field names above are supported along with existing IBM `amountPaid/paymentCurrency/fromAccount/toAccount` and PaySim `senderAccount/receiverAccount` fields. Missing account keys, currencies, timestamps and scores remain unavailable. IEEE payer email domains are descriptive fields, not account identities. PaySim steps/IEEE relative times remain dataset-relative.
+The adapter reads keyed objects from `/transactions` by default. Known raw and snake_case columns are mapped using `src/lib/columnMapping.js`; the adapter records the selected source column names. System status includes field availability counts for the loaded sample. See [the dataset handoff](DATASET_HANDOFF.md) for the mapping table and requirements separated by dataset, model and rule ownership. Canonical field names above are supported along with existing IBM `amountPaid/paymentCurrency/fromAccount/toAccount` and PaySim `senderAccount/receiverAccount` fields. Missing account keys, currencies, timestamps and scores remain unavailable. IEEE payer email domains are descriptive fields, not account identities. PaySim steps/IEEE relative times remain dataset-relative.
 
 ## Live alert source
 

@@ -1,3 +1,4 @@
+import { mapColumns } from './columnMapping.js';
 // Preserve unavailable fields. Dataset labels never supply model scores.
 const string = value => value == null ? '' : String(value);
 export const finiteNumber = value => !['number','string'].includes(typeof value) || String(value).trim() === '' || !Number.isFinite(Number(value)) ? null : Number(value);
@@ -12,12 +13,14 @@ export function isoTimestamp(value) {
 }
 const outcome = value => ['pass','flag','block'].includes(string(value).toLowerCase()) ? string(value).toLowerCase() : 'unassessed';
 export function normalizeAlert(key, data) {
-  const riskScore = score(data.riskScore ?? data.supervisedScore,data.riskScoreScale);
+  const mapped=mapColumns(data,'alerts');data={...data,...mapped.values};
+  const riskScore = data.riskScore!=null ? score(data.riskScore,data.riskScoreScale) : score(data.supervisedScore,data.supervisedScoreScale || data.riskScoreScale);
   const severity = string(data.severity).toLowerCase();
   return {
     id: string(data.alertId || data.alert_id || data.id || key), firebaseKey: key,
     transactionId: string(data.transactionId || data.event_id || data.transaction_id),
     suspiciousAccount: string(data.accountId || data.account || data.sender_account_id || data.fromAccount || data.from_account) || 'Not supplied',
+    fieldSources:mapped.fieldSources,
     riskScore, decision: outcome(data.decision || data.recommended_outcome),
     severity: ['critical','high','medium','low'].includes(severity) ? severity : riskScore == null ? 'unknown' : riskScore >= .9 ? 'critical' : riskScore >= .75 ? 'high' : riskScore >= .55 ? 'medium' : 'low',
     status: string(data.status || 'open').toLowerCase(),
@@ -30,14 +33,16 @@ export function normalizeAlert(key, data) {
     ruleScore:finiteNumber(data.ruleScore), evidenceTransactionIds:Array.isArray(data.evidenceTransactionIds)?data.evidenceTransactionIds:[],
     ruleAssessment:data.ruleAssessment || null,
     shapExplanation: data.shapExplanation || null, gnnExplanation: data.gnnExplanation || null,
-    signals: { anomaly: finiteNumber(data.anomalyScore), supervised: score(data.supervisedScore), gnn: score(data.gnnScore), graph: finiteNumber(data.graphRiskScore) },
+    signals: { anomaly: finiteNumber(data.anomalyScore), supervised: score(data.supervisedScore,data.supervisedScoreScale), gnn: score(data.gnnScore,data.gnnScoreScale), graph: finiteNumber(data.graphRiskScore) },
   };
 }
 export function normalizeTransaction(key, data) {
+  const mapped=mapColumns(data,'transactions');data={...data,...mapped.values};
   const CURRENCY_ISO = { 'US Dollar':'USD', Euro:'EUR', 'British Pound':'GBP', 'UAE Dirham':'AED', 'Saudi Riyal':'SAR', 'Swiss Franc':'CHF', 'Australian Dollar':'AUD', 'Canadian Dollar':'CAD', 'Chinese Yuan':'CNY', 'Japanese Yen':'JPY', 'Indian Rupee':'INR', 'Russian Ruble':'RUB', 'Singapore Dollar':'SGD', 'Hong Kong Dollar':'HKD' };
-  const currencyName = data.paymentCurrency || data.receivingCurrency || data.currency;
+  const paid=finiteNumber(data.amountPaid),received=finiteNumber(data.amountReceived);
+  const currencyName = paid!=null ? data.paymentCurrency || data.currency : received!=null ? data.receivingCurrency || data.currency : data.currency || data.paymentCurrency || data.receivingCurrency;
   const currency = CURRENCY_ISO[currencyName] || (/^[A-Z]{3}$/.test(currencyName || '') ? currencyName : null);
-  const amount = finiteNumber(data.amountPaid ?? data.amountReceived ?? data.amount);
+  const amount = paid ?? received ?? finiteNumber(data.amount);
   const timestamp = isoTimestamp(data.timestamp || data.created_at || data.date || data.createdAt);
   const fromAccount = string(data.fromAccount || data.senderAccount || data.sender_account_id);
   const toAccount = string(data.toAccount || data.receiverAccount || data.receiver_account_id);
@@ -46,14 +51,14 @@ export function normalizeTransaction(key, data) {
   if (amount == null || amount < 0) dataQuality.push('Amount missing or invalid');
   if (!currency) dataQuality.push('Currency not supplied');
   if (!timestamp) dataQuality.push('Event timestamp not supplied or invalid');
-  return { id:string(data.transactionId || data.event_id || data.id || key), firebaseKey:key, timestamp,
+  return { id:string(data.transactionId || data.event_id || data.id || key), firebaseKey:key, timestamp, fieldSources:mapped.fieldSources,
     fromAccount:fromAccount || 'Not supplied', toAccount:toAccount || 'Not supplied', amount, currency,
     riskScore:score(data.riskScore ?? data.fraudScore,data.riskScoreScale), decision:outcome(data.decision),
     channel:string(data.paymentFormat || data.transactionType || data.transaction_type || data.channel || [data.cardType,data.cardCategory].filter(Boolean).join(' / ')) || 'Not supplied',
     sourceDataset:string(data.sourceDataset || data.source), fromBank:string(data.fromBank), toBank:string(data.toBank),
     payerEmailDomain:string(data.payerEmailDomain), receiverEmailDomain:string(data.receiverEmailDomain),
     datasetLabel:data.label ?? data.isLaundering ?? data.isFraud ?? null, relativeTime:data.step != null ? `Dataset hour ${data.step}` : data.transactionTime != null ? `Dataset second ${data.transactionTime}` : null,
-    modelVersion:string(data.modelVersion), dataQuality };
+    modelVersion:string(data.modelVersion), policyVersion:string(data.policyVersion), ruleIds:Array.isArray(data.ruleIds)?data.ruleIds:[], ruleScore:finiteNumber(data.ruleScore), dataQuality };
 }
 export function normalizeAuditLog(key, data) {
   return { id:string(data.id || data.logId || key), timestamp:isoTimestamp(data.timestamp || data.createdAt || data.at),

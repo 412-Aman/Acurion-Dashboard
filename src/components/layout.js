@@ -1,7 +1,10 @@
+import { installCustomSelects } from './customSelect.js';
+import { connectionState } from '../lib/connectionState.js';
 import { navigateSmoothly } from '../lib/motion.js';
 import { authSettings,requiresEmailVerification } from '../lib/authPolicy.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase.js';
+import { auth, db } from '../lib/firebase.js';
+import { onValue, ref } from 'firebase/database';
 import { DEMO_MODE } from '../lib/config.js';
 import { NAV_ITEMS, activeNavigation } from '../lib/navigation.js';
 import { observePageDataStatus, dataErrorDetails } from '../lib/dataStatus.js';
@@ -12,6 +15,7 @@ import { mountNavigationDock } from '../islands/navigation-dock.tsx';
 import { mountWorkspaceMap } from '../islands/workspace-map.tsx';
 export function renderLayout({active,pageTitle,pageSubtitle}) {
   installTooltips();
+  installCustomSelects();
   const root=document.getElementById('app');
   let view=new URLSearchParams(location.search).get('view')||'customers';
   let destination=activeNavigation(active,view);
@@ -37,9 +41,16 @@ export function renderLayout({active,pageTitle,pageSubtitle}) {
   if(DEMO_MODE)setUser('Demo analyst','Fictional records only','No Firebase session');
   else onAuthStateChanged(auth,user=>{if(!user){if(active!=='system.html'){location.replace('login.html');return;}setUser('Not signed in','Sign in to check your access','No active session');}else if(active!=='system.html'&&authSettings(import.meta.env).enabled&&requiresEmailVerification(user)){location.replace('verify-email.html');}else setUser(user.displayName||user.email?.split('@')[0]||'Analyst',user.email||'',user.emailVerified?'Email verified':'Email not verified');});
   document.getElementById('signout-btn').onclick=async()=>{try{sessionStorage.removeItem('acurion:demo');if(!DEMO_MODE)await signOut(auth);navigateSmoothly('login.html');}catch{const notice=document.getElementById('data-connection-notice');notice.hidden=false;notice.textContent='Sign-out could not be completed. Check your connection, then try Sign out again.';}};
+  let latestSourceStatus=[],transport=DEMO_MODE?undefined:null;
+  const updateConnection=()=>{const status=connectionState(latestSourceStatus,{demo:DEMO_MODE,online:navigator.onLine,transport});const indicator=document.querySelector('.header-data-status');indicator.dataset.state=status.state;indicator.dataset.tooltip=status.detail;document.getElementById('nav-data-status').textContent=status.label;};
+  window.addEventListener('online',updateConnection);window.addEventListener('offline',updateConnection);
+  let stopTransport;
+  const watchTransport=()=>{if(!DEMO_MODE&&!stopTransport)stopTransport=onValue(ref(db,'.info/connected'),snapshot=>{transport=snapshot.val()===true;updateConnection();},()=>{transport=false;updateConnection();});};
+  window.addEventListener('pagehide',()=>{stopTransport?.();stopTransport=undefined;});
+  window.addEventListener('pageshow',watchTransport);watchTransport();
   observePageDataStatus(records=>{
-    const failures=records.filter(r=>r.state==='error'),ready=records.filter(r=>r.state==='ready'||r.state==='empty'),loading=records.some(r=>r.state==='loading');
-    document.getElementById('nav-data-status').textContent=DEMO_MODE?'Demo':failures.length?'Access needs attention':ready.length?'Data connected':loading?'Checking…':'Check connection';
+    latestSourceStatus=records;updateConnection();
+    const failures=records.filter(r=>r.state==='error');
     const notice=document.getElementById('data-connection-notice');
     notice.hidden=DEMO_MODE||!failures.length||isSandbox;
     if(!notice.hidden){const first=failures[0],detail=dataErrorDetails({code:first.error},{path:first.path,user:auth.currentUser,operation:first.resource.includes('write')?'write':'read'});notice.innerHTML=`<div><strong>${esc(detail.title)}</strong><span>${esc(detail.message)}</span></div><a class="text-button" href="${esc(detail.href)}">${esc(detail.label)} →</a>`;}
