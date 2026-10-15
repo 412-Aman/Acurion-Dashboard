@@ -12,7 +12,7 @@ export function authSettings(env) {
   };
 }
 export function authErrorMessage(error) {
-  const code=String(error?.code||'');
+  const code=String(typeof error==='string'?error:error?.code||'');
   const messages={
     'auth/not-configured':'Sign-in is not available for this workspace yet. You can explore the demo while setup is completed.',
     'auth/provider-not-configured':'This sign-in provider has not been enabled for this website. Use email sign-in, or ask your administrator to enable this provider after completing its Firebase setup.',

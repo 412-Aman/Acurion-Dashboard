@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase.js';
 import { DEMO_MODE } from '../lib/config.js';
 import { NAV_ITEMS, activeNavigation } from '../lib/navigation.js';
-import { observeDataStatus, dataErrorDetails } from '../lib/dataStatus.js';
+import { observePageDataStatus, dataErrorDetails } from '../lib/dataStatus.js';
 import { icon, escapeHTML as esc } from './icons.js';
 import { installRecordMenu } from './recordMenu.js';
 import { installTooltips } from './tooltip.js';
@@ -37,20 +37,21 @@ export function renderLayout({active,pageTitle,pageSubtitle}) {
   if(DEMO_MODE)setUser('Demo analyst','Fictional records only','No Firebase session');
   else onAuthStateChanged(auth,user=>{if(!user){if(active!=='system.html'){location.replace('login.html');return;}setUser('Not signed in','Sign in to check your access','No active session');}else if(active!=='system.html'&&authSettings(import.meta.env).enabled&&requiresEmailVerification(user)){location.replace('verify-email.html');}else setUser(user.displayName||user.email?.split('@')[0]||'Analyst',user.email||'',user.emailVerified?'Email verified':'Email not verified');});
   document.getElementById('signout-btn').onclick=async()=>{try{sessionStorage.removeItem('acurion:demo');if(!DEMO_MODE)await signOut(auth);navigateSmoothly('login.html');}catch{const notice=document.getElementById('data-connection-notice');notice.hidden=false;notice.textContent='Sign-out could not be completed. Check your connection, then try Sign out again.';}};
-  const disposeStatus=observeDataStatus(records=>{
+  observePageDataStatus(records=>{
     const failures=records.filter(r=>r.state==='error'),ready=records.filter(r=>r.state==='ready'||r.state==='empty'),loading=records.some(r=>r.state==='loading');
     document.getElementById('nav-data-status').textContent=DEMO_MODE?'Demo':failures.length?'Access needs attention':ready.length?'Data connected':loading?'Checking…':'Check connection';
     const notice=document.getElementById('data-connection-notice');
     notice.hidden=DEMO_MODE||!failures.length||isSandbox;
     if(!notice.hidden){const first=failures[0],detail=dataErrorDetails({code:first.error},{path:first.path,user:auth.currentUser,operation:first.resource.includes('write')?'write':'read'});notice.innerHTML=`<div><strong>${esc(detail.title)}</strong><span>${esc(detail.message)}</span></div><a class="text-button" href="${esc(detail.href)}">${esc(detail.label)} →</a>`;}
   });
-  window.addEventListener('pagehide',disposeStatus,{once:true});
   const search=document.getElementById('search-dialog'),input=document.getElementById('command-query'),results=document.getElementById('command-results');
   let searchable=[],currentResults=[],cursor=0;
   const updateResults=()=>{currentResults=searchable.filter(n=>`${n.label} ${n.detail}`.toLowerCase().includes(input.value.toLowerCase())).slice(0,18);cursor=Math.min(cursor,Math.max(0,currentResults.length-1));results.innerHTML=`<p class="menu-label">${input.value?'Matching pages & records':'Go to'}</p>${currentResults.map((n,i)=>`<a href="${esc(n.href)}" class="command-result ${i===cursor?'selected':''}">${icon(n.icon)}<span>${esc(n.label)}<small>${esc(n.detail)}</small></span><span class="result-enter">↵</span></a>`).join('')||'<div class="empty">Nothing matches that search.</div>'}`;};
   const openSearch=()=>{searchable=[...NAV_ITEMS,{href:'reports.html#draft-tray',label:'Working drafts',icon:'reports',detail:'Temporary notes and recovery'}];try{const stored=JSON.parse(localStorage.getItem('acurion.compliance.sandbox.v1')||'{}');searchable.push(...(stored.customers||[]).map(c=>({label:c.name,detail:`Customer · ${c.id}`,icon:'customers',href:`compliance.html?view=customers&customer=${encodeURIComponent(c.id)}`})),...(stored.cases||[]).map(c=>({label:c.id,detail:`Case · ${c.customerId}`,icon:'cases',href:`compliance.html?view=cases&case=${encodeURIComponent(c.id)}`})));}catch{}updateResults();search.showModal();input.focus();};
   document.getElementById('global-search').onclick=openSearch;input.oninput=()=>{cursor=0;updateResults();};
-  input.onkeydown=event=>{if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();cursor=Math.max(0,Math.min(currentResults.length-1,cursor+(event.key==='ArrowDown'?1:-1)));updateResults();results.querySelector('.selected')?.scrollIntoView({block:'nearest'});}if(event.key==='Enter'&&currentResults[cursor]){event.preventDefault();navigateSmoothly(currentResults[cursor].href);}};
+  // Click and Enter share the same route handling, including smooth local workspace views.
+  results.addEventListener('click',event=>{if(event.button===0&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey&&event.target.closest('a[href]'))search.close();});
+  input.onkeydown=event=>{if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();cursor=Math.max(0,Math.min(currentResults.length-1,cursor+(event.key==='ArrowDown'?1:-1)));updateResults();results.querySelector('.selected')?.scrollIntoView({block:'nearest'});}if(event.key==='Enter'&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey&&currentResults[cursor]){event.preventDefault();results.querySelector('.selected')?.click();}};
   document.addEventListener('keydown',event=>{if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){event.preventDefault();search.open?search.close():openSearch();}if(event.key==='Escape'&&!event.defaultPrevented){accountMenu.hidden=true;accountTrigger.setAttribute('aria-expanded','false');}if(event.key.toLowerCase()==='m'&&!event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.target.closest('input,textarea,select,[contenteditable=\"true\"]')&&!document.querySelector('dialog[open]')){event.preventDefault();openMap();}});
   let disposeNotifications;const notificationDialog=document.getElementById('notifications-dialog');
   notificationDialog.addEventListener('close',()=>{disposeNotifications?.();disposeNotifications=undefined;});

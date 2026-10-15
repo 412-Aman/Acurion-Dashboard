@@ -36,3 +36,8 @@ test('auth errors do not reveal account existence, credentials or arbitrary serv
   assert.doesNotMatch(authErrorMessage({code:'auth/unrecognized-response',message:'secret token value'}),/secret token value/);
   assert.doesNotMatch(authErrorMessage({code:'auth/bad?token=private'}),/private|token=/);
 });
+test('saved verification error codes keep their specific next steps after navigation',()=>{
+  for(const code of ['auth/invalid-sender','auth/network-request-failed','auth/unauthorized-continue-uri'])assert.equal(authErrorMessage(code),authErrorMessage({code}));
+  assert.match(authErrorMessage('auth/invalid-sender'),/administrator.*template/);
+  assert.doesNotMatch(authErrorMessage('private server payload?token=secret'),/private|secret|token=/);
+});

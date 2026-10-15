@@ -10,6 +10,15 @@ export function observeDataStatus(listener) {
   listener(getDataStatus());
   return () => listeners.delete(listener);
 }
+// Cached documents can return through Back/Forward. Resume their status subscription.
+export function observePageDataStatus(listener,page=window) {
+  let unsubscribe=observeDataStatus(listener);
+  const suspend=()=>{unsubscribe?.();unsubscribe=null;};
+  const resume=()=>{if(!unsubscribe)unsubscribe=observeDataStatus(listener);};
+  page.addEventListener('pagehide',suspend);
+  page.addEventListener('pageshow',resume);
+  return ()=>{suspend();page.removeEventListener('pagehide',suspend);page.removeEventListener('pageshow',resume);};
+}
 export function dataErrorCode(error,fallback='data/read-failed') {
   const code=String(error?.code||'').toLowerCase(),message=String(error?.message||'');
   // RTDB get() can reject with a plain Error("Permission denied"), without .code.
