@@ -3,7 +3,8 @@ import { ref, get, query as dbQuery, limitToLast, onValue, update, push } from '
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { auth, db, fs, requireSession } from './firebase.js';
 import { transactions as mockTransactions, alerts as mockAlerts, graphData as mockGraphData, auditLogs as mockAuditLogs } from '../data/mockData.js';
-import { DEMO_MODE, DATA_PATHS, READ_LIMIT } from './config.js';
+import { DEMO_MODE, DATA_PATHS, READ_LIMIT, LEGACY_FIRESTORE_AUDIT } from './config.js';
+import { readAuditSources } from './auditSources.js';
 import { normalizeAlert, normalizeTransaction, normalizeAuditLog, validateReview, isoTimestamp, finiteNumber } from './dataContracts.js';
 import { setDataStatus, withTimeout, dataErrorCode } from './dataStatus.js';
 import { loadWorkspace } from './complianceStore.js';
@@ -113,14 +114,12 @@ export function getAuditLogs() {
   return load('audit',DATA_PATHS.audit,async()=>{
     if(DEMO_MODE)return [...demoReviews().audit,...mockAuditLogs];
     // New analyst actions are stored atomically with the alert in RTDB.
-    let rtdb=[], firestore=[];
-    const outcomes=await Promise.allSettled([
-      readPath(DATA_PATHS.audit).then(val=>{rtdb=entries(val).map(([key,data])=>normalizeAuditLog(key,data));setDataStatus('RTDB audit',{state:rtdb.length?'ready':'empty',path:DATA_PATHS.audit,count:rtdb.length,mode:'firebase',lastSuccess:new Date().toISOString(),error:null});}),
-      (async()=>{await withTimeout(requireSession());const snap=await withTimeout(getDocs(query(collection(fs,'auditLogs'),orderBy('timestamp','desc'),limit(READ_LIMIT))));firestore=snap.docs.map(doc=>normalizeAuditLog(doc.id,doc.data()));setDataStatus('Firestore audit',{state:firestore.length?'ready':'empty',path:'auditLogs',count:firestore.length,mode:'firebase',lastSuccess:new Date().toISOString(),error:null});})(),
-    ]);
-    outcomes.forEach((result,i)=>{if(result.status==='rejected')setDataStatus(i===0?'RTDB audit':'Firestore audit',{state:'error',path:i===0?DATA_PATHS.audit:'auditLogs',mode:'firebase',error:dataErrorCode(result.reason)});});
-    if(outcomes.every(r=>r.status==='rejected'))throw outcomes[0].reason;
-    return [...new Map([...firestore,...rtdb].map(log=>[log.id,log])).values()];
+    return readAuditSources({
+      legacyEnabled:LEGACY_FIRESTORE_AUDIT,
+      readRealtime:async()=>entries(await readPath(DATA_PATHS.audit)).map(([key,data])=>normalizeAuditLog(key,data)),
+      readLegacy:async()=>{await withTimeout(requireSession());const snap=await withTimeout(getDocs(query(collection(fs,'auditLogs'),orderBy('timestamp','desc'),limit(READ_LIMIT))));return snap.docs.map(doc=>normalizeAuditLog(doc.id,doc.data()));},
+      onStatus:(resource,status)=>setDataStatus(resource,{...status,path:resource==='RTDB audit'?DATA_PATHS.audit:'auditLogs',mode:'firebase'}),
+    });
   });
 }
 export async function saveAlertReview(alert, review) {

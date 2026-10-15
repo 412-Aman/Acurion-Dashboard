@@ -4,6 +4,7 @@ try { sessionDemo = sessionStorage.getItem('acurion:demo') === 'true'; } catch {
 export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true' || sessionDemo;
 const env = import.meta.env;
 export const READ_LIMIT = Math.min(2000, Math.max(25, Number(env.VITE_FIREBASE_READ_LIMIT) || 500));
+export const LEGACY_FIRESTORE_AUDIT = env.VITE_FIREBASE_LEGACY_FIRESTORE_AUDIT === 'true';
 export const DATA_PATHS = {
   alerts: env.VITE_FIREBASE_ALERTS_PATH || 'alerts',
   transactions: env.VITE_FIREBASE_TRANSACTIONS_PATH || 'transactions',
