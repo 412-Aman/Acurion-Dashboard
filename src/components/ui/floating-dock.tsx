@@ -29,14 +29,15 @@ function IconContainer({mouseX,item}:{mouseX:MotionValue<number>;item:DockItem})
   const ref=useRef<HTMLDivElement>(null),reduced=useReducedMotion();
   const [focused,setFocused]=useState(false);
   const distance=useTransform(mouseX,value=>{const bounds=ref.current?.getBoundingClientRect()??{x:0,width:0};return value-bounds.x-bounds.width/2;});
-  const sizeTarget=useTransform(distance,[-140,0,140],[44,68,44]);
-  const iconTarget=useTransform(distance,[-140,0,140],[20,30,20]);
+  const sizeTarget=useTransform(distance,[-100,0,100],[36,52,36]);
+  const iconTarget=useTransform(distance,[-100,0,100],[18,24,18]);
   const size=useSpring(sizeTarget,{mass:.1,stiffness:160,damping:15});
   const iconSize=useSpring(iconTarget,{mass:.1,stiffness:160,damping:15});
-  const props={className:`dock-link ${item.active?'is-current':''}`,'aria-label':item.title,'aria-current':item.active?'page' as const:undefined,'data-tooltip':item.detail?`${item.title}: ${item.detail}`:item.title,onFocus:()=>setFocused(true),onBlur:()=>setFocused(false)};
-  const body=<motion.div ref={ref} className="dock-orb" style={{width:reduced?44:focused?56:size,height:reduced?44:focused?56:size}}>
-    <motion.span className="dock-icon" aria-hidden="true" style={{width:reduced?20:iconSize,height:reduced?20:iconSize}}>{item.icon}</motion.span>
+  const props={className:`dock-link ${item.active?'is-current':''}`,'aria-label':item.title,'aria-current':item.active?'page' as const:undefined,'aria-description':item.detail,onFocus:()=>setFocused(true),onBlur:()=>setFocused(false)};
+  const body=<motion.div ref={ref} className="dock-orb" style={{width:reduced?36:focused?44:size,height:reduced?36:focused?44:size}}>
+    <motion.span className="dock-icon" aria-hidden="true" style={{width:reduced?18:iconSize,height:reduced?18:iconSize}}>{item.icon}</motion.span>
     <span className="dock-current-dot" aria-hidden="true"/>
+    <span className="dock-label" aria-hidden="true">{item.title}</span>
   </motion.div>;
   return item.href?<a {...props} href={item.href}>{body}</a>:<button {...props} type="button" onClick={item.onSelect} aria-haspopup="dialog">{body}</button>;
 }
