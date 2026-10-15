@@ -26,6 +26,8 @@ To use the existing project or connect a replacement:
 
 With auth enabled, password accounts must verify their email before entering the workspace. OAuth identity or successful registration does not grant data access. Server rules must enforce roles, institution membership and permissions independently. Provider collisions direct the user to their original sign-in method; the app does not silently link accounts.
 
+Signup sends one verification request, then carries its delivery result to the verification page. A successful send starts a 60-second resend cooldown; Firebase's `auth/too-many-requests` starts a five-minute local backoff. Account/project-scoped delivery status persists across refreshes when browser storage is available, with an in-memory fallback. Pending requests share one promise, and the app never retries automatically. Firebase's actual restriction can outlast this local timer; the app does not promise that waiting five minutes removes it. Send failures remain visible and do not require creating the account again. Verification status checking remains available during the resend cooldown.
+
 An email sign-in attempt with deliberately invalid synthetic credentials reached the existing project's Firebase Authentication and returned the expected incorrect-credentials response. This verifies that the client no longer blocks email sign-in before the SDK request; it does not prove a successful login with a real account. Google/GitHub account consent and real reset/verification emails require validation after provider activation.
 
 ## Motion behavior

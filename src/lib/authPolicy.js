@@ -25,6 +25,7 @@ export function authErrorMessage(error) {
     'auth/weak-password':'Use a stronger password that meets your workspace requirements.',
     'auth/password-does-not-meet-requirements':'The password does not meet this workspace’s password requirements.',
     'auth/too-many-requests':'Too many attempts. Wait a moment before trying again.',
+    'auth/verification-cooldown':'A verification request was made recently. Check your inbox and spam folder before requesting another email.',
     'auth/network-request-failed':'Check your internet connection and try again.',
     'auth/popup-blocked':'Your browser blocked the sign-in window. Allow popups for this site and try again.',
     'auth/popup-closed-by-user':'The sign-in window was closed. You can try again whenever you are ready.',

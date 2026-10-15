@@ -1,7 +1,16 @@
 import { GoogleAuthProvider,GithubAuthProvider,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,sendEmailVerification,updateProfile,reload,verifyPasswordResetCode,confirmPasswordReset,applyActionCode,checkActionCode,signOut } from 'firebase/auth';
-import { auth,configurationIssues } from './firebase.js';
+import { auth,configurationIssues,firebaseConfig } from './firebase.js';
 import { authSettings,validateRegistration } from './authPolicy.js';
+import { createVerificationDelivery } from './verificationDelivery.js';
 export const AUTH_SETTINGS=authSettings(import.meta.env);
+let verificationStorage;
+try{verificationStorage=localStorage;}catch{}
+const verificationDelivery=createVerificationDelivery({
+  storage:verificationStorage,namespace:firebaseConfig.projectId,
+  send:user=>sendEmailVerification(user,{url:new URL('verify-email.html',location.href).href}),
+});
+export const verificationEmailState=uid=>verificationDelivery.state(uid);
+export const verificationEmailWait=uid=>verificationDelivery.remaining(uid);
 function unavailable(code) { const error=new Error(code);error.code=code;throw error; }
 function requireConfigured() {
   if(!AUTH_SETTINGS.enabled)unavailable('auth/not-configured');
@@ -33,7 +42,7 @@ export function requestPasswordReset(email) {
 }
 export async function requestEmailVerification() {
   requireConfigured();await auth.authStateReady();if(!auth.currentUser)unavailable('auth/session-required');
-  return sendEmailVerification(auth.currentUser,{url:new URL('verify-email.html',location.href).href});
+  return verificationDelivery.request(auth.currentUser);
 }
 export async function refreshVerifiedUser() {
   requireConfigured();await auth.authStateReady();if(!auth.currentUser)unavailable('auth/session-required');
