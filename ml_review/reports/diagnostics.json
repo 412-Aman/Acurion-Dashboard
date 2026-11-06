@@ -1,0 +1,360 @@
+{
+  "xgb_by_format": [
+    {
+      "group": "ACH",
+      "rows": 88784,
+      "positives": 418,
+      "tp": 222,
+      "fn": 196,
+      "fp": 74,
+      "recall": 0.5311004784688995
+    },
+    {
+      "group": "Bitcoin",
+      "rows": 18198,
+      "positives": 9,
+      "tp": 0,
+      "fn": 9,
+      "fp": 0,
+      "recall": 0.0
+    },
+    {
+      "group": "Cash",
+      "rows": 71471,
+      "positives": 14,
+      "tp": 0,
+      "fn": 14,
+      "fp": 0,
+      "recall": 0.0
+    },
+    {
+      "group": "Cheque",
+      "rows": 267574,
+      "positives": 48,
+      "tp": 0,
+      "fn": 48,
+      "fp": 1,
+      "recall": 0.0
+    },
+    {
+      "group": "Credit Card",
+      "rows": 185411,
+      "positives": 25,
+      "tp": 0,
+      "fn": 25,
+      "fp": 0,
+      "recall": 0.0
+    },
+    {
+      "group": "Wire",
+      "rows": 23029,
+      "positives": 0,
+      "tp": 0,
+      "fn": 0,
+      "fp": 0,
+      "recall": null
+    }
+  ],
+  "xgb_by_currency": [
+    {
+      "group": "Australian Dollar",
+      "rows": 17649,
+      "positives": 17,
+      "tp": 10,
+      "fn": 7,
+      "fp": 3,
+      "recall": 0.5882352941176471
+    },
+    {
+      "group": "Bitcoin",
+      "rows": 18195,
+      "positives": 9,
+      "tp": 0,
+      "fn": 9,
+      "fp": 0,
+      "recall": 0.0
+    },
+    {
+      "group": "Brazil Real",
+      "rows": 9325,
+      "positives": 1,
+      "tp": 0,
+      "fn": 1,
+      "fp": 2,
+      "recall": 0.0
+    },
+    {
+      "group": "Canadian Dollar",
+      "rows": 18069,
+      "positives": 7,
+      "tp": 1,
+      "fn": 6,
+      "fp": 3,
+      "recall": 0.14285714285714285
+    },
+    {
+      "group": "Euro",
+      "rows": 150001,
+      "positives": 143,
+      "tp": 57,
+      "fn": 86,
+      "fp": 12,
+      "recall": 0.3986013986013986
+    },
+    {
+      "group": "Mexican Peso",
+      "rows": 14090,
+      "positives": 14,
+      "tp": 7,
+      "fn": 7,
+      "fp": 1,
+      "recall": 0.5
+    },
+    {
+      "group": "Ruble",
+      "rows": 20133,
+      "positives": 9,
+      "tp": 5,
+      "fn": 4,
+      "fp": 2,
+      "recall": 0.5555555555555556
+    },
+    {
+      "group": "Rupee",
+      "rows": 24611,
+      "positives": 12,
+      "tp": 7,
+      "fn": 5,
+      "fp": 1,
+      "recall": 0.5833333333333334
+    },
+    {
+      "group": "Saudi Riyal",
+      "rows": 11516,
+      "positives": 40,
+      "tp": 19,
+      "fn": 21,
+      "fp": 6,
+      "recall": 0.475
+    },
+    {
+      "group": "Shekel",
+      "rows": 25121,
+      "positives": 10,
+      "tp": 6,
+      "fn": 4,
+      "fp": 4,
+      "recall": 0.6
+    },
+    {
+      "group": "Swiss Franc",
+      "rows": 30020,
+      "positives": 10,
+      "tp": 6,
+      "fn": 4,
+      "fp": 2,
+      "recall": 0.6
+    },
+    {
+      "group": "UK Pound",
+      "rows": 23278,
+      "positives": 15,
+      "tp": 5,
+      "fn": 10,
+      "fp": 1,
+      "recall": 0.3333333333333333
+    },
+    {
+      "group": "US Dollar",
+      "rows": 245204,
+      "positives": 189,
+      "tp": 77,
+      "fn": 112,
+      "fp": 31,
+      "recall": 0.4074074074074074
+    },
+    {
+      "group": "Yen",
+      "rows": 19945,
+      "positives": 15,
+      "tp": 8,
+      "fn": 7,
+      "fp": 2,
+      "recall": 0.5333333333333333
+    },
+    {
+      "group": "Yuan",
+      "rows": 27310,
+      "positives": 23,
+      "tp": 14,
+      "fn": 9,
+      "fp": 5,
+      "recall": 0.6086956521739131
+    }
+  ],
+  "xgb_by_sender_history": [
+    {
+      "group": "no prior sent",
+      "rows": 913,
+      "positives": 15,
+      "tp": 6,
+      "fn": 9,
+      "fp": 9,
+      "recall": 0.4
+    },
+    {
+      "group": "1-5",
+      "rows": 97409,
+      "positives": 202,
+      "tp": 88,
+      "fn": 114,
+      "fp": 38,
+      "recall": 0.43564356435643564
+    },
+    {
+      "group": "6-50",
+      "rows": 315540,
+      "positives": 158,
+      "tp": 91,
+      "fn": 67,
+      "fp": 25,
+      "recall": 0.5759493670886076
+    },
+    {
+      "group": "over 50",
+      "rows": 240605,
+      "positives": 139,
+      "tp": 37,
+      "fn": 102,
+      "fp": 3,
+      "recall": 0.26618705035971224
+    }
+  ],
+  "li_large": {
+    "bytes": 7346755566,
+    "rows": 176066557,
+    "row_groups": 35214,
+    "columns": [
+      "timestamp",
+      "From Bank",
+      "Account",
+      "To Bank",
+      "Account.1",
+      "Amount Received",
+      "Receiving Currency",
+      "Amount Paid",
+      "Payment Currency",
+      "Payment Format",
+      "Is Laundering",
+      "dataset_id",
+      "sender",
+      "receiver",
+      "amount",
+      "transaction_id",
+      "time_basis"
+    ],
+    "validation": "Parquet footer inspected; entire file extracted with ZIP CRC verification, not a complete row-level quality scan."
+  },
+  "validation_by_period": {
+    "gnn_aml_network_v5_hi_medium_provisional.pt": {
+      "early": {
+        "rows": 400,
+        "positives": 10,
+        "alerts": 26,
+        "tp": 7,
+        "fp": 19,
+        "fn": 3,
+        "tn": 371,
+        "precision": 0.2692307692307692,
+        "recall": 0.7,
+        "false_positive_rate": 0.04871794871794872,
+        "alerts_per_100k": 6500.0,
+        "false_alerts_per_true_alert": 2.7142857142857144,
+        "average_precision": 0.6623150700541597,
+        "threshold": 0.38466477394104004
+      },
+      "late": {
+        "rows": 84,
+        "positives": 84,
+        "alerts": 83,
+        "tp": 83,
+        "fp": 0,
+        "fn": 1,
+        "tn": 0,
+        "precision": 1.0,
+        "recall": 0.9880952380952381,
+        "false_positive_rate": null,
+        "alerts_per_100k": 98809.52380952382,
+        "false_alerts_per_true_alert": 0.0,
+        "average_precision": 1.0,
+        "threshold": 0.38466477394104004
+      },
+      "all": {
+        "rows": 484,
+        "positives": 94,
+        "alerts": 109,
+        "tp": 90,
+        "fp": 19,
+        "fn": 4,
+        "tn": 371,
+        "precision": 0.8256880733944955,
+        "recall": 0.9574468085106383,
+        "false_positive_rate": 0.04871794871794872,
+        "alerts_per_100k": 22520.661157024795,
+        "false_alerts_per_true_alert": 0.2111111111111111,
+        "average_precision": 0.9804294915863003,
+        "threshold": 0.38466477394104004
+      }
+    },
+    "gnn_aml_network_v5_early_provisional.pt": {
+      "early": {
+        "rows": 400,
+        "positives": 10,
+        "alerts": 25,
+        "tp": 6,
+        "fp": 19,
+        "fn": 4,
+        "tn": 371,
+        "precision": 0.24,
+        "recall": 0.6,
+        "false_positive_rate": 0.04871794871794872,
+        "alerts_per_100k": 6250.0,
+        "false_alerts_per_true_alert": 3.1666666666666665,
+        "average_precision": 0.5613730645632488,
+        "threshold": 0.7549548745155334
+      },
+      "late": {
+        "rows": 84,
+        "positives": 84,
+        "alerts": 82,
+        "tp": 82,
+        "fp": 0,
+        "fn": 2,
+        "tn": 0,
+        "precision": 1.0,
+        "recall": 0.9761904761904762,
+        "false_positive_rate": null,
+        "alerts_per_100k": 97619.04761904762,
+        "false_alerts_per_true_alert": 0.0,
+        "average_precision": 0.9999999999999998,
+        "threshold": 0.7549548745155334
+      },
+      "all": {
+        "rows": 484,
+        "positives": 94,
+        "alerts": 107,
+        "tp": 88,
+        "fp": 19,
+        "fn": 6,
+        "tn": 371,
+        "precision": 0.822429906542056,
+        "recall": 0.9361702127659575,
+        "false_positive_rate": 0.04871794871794872,
+        "alerts_per_100k": 22107.438016528926,
+        "false_alerts_per_true_alert": 0.2159090909090909,
+        "average_precision": 0.9621711190054708,
+        "threshold": 0.7549548745155334
+      }
+    }
+  }
+}

@@ -1,0 +1,999 @@
+{
+  "gnn_aml_network_v4.pt": {
+    "sha256": "b3da0650d6cc2156103c71e58bee4b4f89b12c962260982ca46f597fad6714f0",
+    "metadata": {
+      "model_name": "acurion_aml_network_v4",
+      "node_features": 5,
+      "edge_features": 14,
+      "global_features": 4,
+      "heads": [
+        "network_aml",
+        "additional_network_aml"
+      ],
+      "thresholds": {
+        "network_aml": 0.8271791338920593,
+        "additional_network_aml": 0.8575031757354736
+      },
+      "validation_reports": {
+        "network_aml": {
+          "average_precision": 0.8079103558503724,
+          "precision": 0.8461538461538461,
+          "recall": 0.47530864197530864,
+          "f1": 0.6086956521739131,
+          "normal_false_positives": 28,
+          "false_positive_rate": 0.0497335701598579,
+          "true_positives": 154,
+          "total_positives": 324,
+          "total_negatives": 563
+        },
+        "additional_network_aml": {
+          "average_precision": 0.8284519233640317,
+          "precision": 0.7865853658536586,
+          "recall": 0.7087912087912088,
+          "f1": 0.7456647398843931,
+          "normal_false_positives": 35,
+          "false_positive_rate": 0.04964539007092199,
+          "true_positives": 129,
+          "total_positives": 182,
+          "total_negatives": 705
+        }
+      },
+      "train": "LI-Small",
+      "validation": "HI-Medium",
+      "warm_start": "models\\gnn_mixed_network_v3.pt",
+      "best_epoch": 20
+    },
+    "state_shapes": {
+      "node_input.weight": [
+        48,
+        5
+      ],
+      "node_input.bias": [
+        48
+      ],
+      "edge_input.weight": [
+        48,
+        14
+      ],
+      "edge_input.bias": [
+        48
+      ],
+      "layers.0.weight": [
+        48,
+        144
+      ],
+      "layers.0.bias": [
+        48
+      ],
+      "layers.1.weight": [
+        48,
+        144
+      ],
+      "layers.1.bias": [
+        48
+      ],
+      "layers.2.weight": [
+        48,
+        144
+      ],
+      "layers.2.bias": [
+        48
+      ],
+      "head.0.weight": [
+        96,
+        100
+      ],
+      "head.0.bias": [
+        96
+      ],
+      "head.3.weight": [
+        2,
+        96
+      ],
+      "head.3.bias": [
+        2
+      ]
+    }
+  },
+  "gnn_aml_network_v5_early_provisional.pt": {
+    "sha256": "89def7a8b9a62bc9c1ecbd2751b1c0d0e1f6a342d0db391b24c2b26bec065a32",
+    "metadata": {
+      "model_name": "acurion_aml_network_v5_early_provisional",
+      "node_features": 5,
+      "edge_features": 14,
+      "global_features": 4,
+      "heads": [
+        "network_aml",
+        "additional_network_aml"
+      ],
+      "train_scenario": "HI-Medium",
+      "validation_scenario": "LI-Small",
+      "training": "fresh_init_label_blind_candidates",
+      "network_aml_threshold": 0.7549548745155334,
+      "best_epoch": 13,
+      "validation_metrics": {
+        "average_precision": 0.9621711190054708,
+        "precision": 0.822429906542056,
+        "recall": 0.9361702127659575,
+        "f1": 0.8756218905472637,
+        "true_positives": 88,
+        "false_positives": 19
+      }
+    },
+    "state_shapes": {
+      "node_input.weight": [
+        48,
+        5
+      ],
+      "node_input.bias": [
+        48
+      ],
+      "edge_input.weight": [
+        48,
+        14
+      ],
+      "edge_input.bias": [
+        48
+      ],
+      "layers.0.weight": [
+        48,
+        144
+      ],
+      "layers.0.bias": [
+        48
+      ],
+      "layers.1.weight": [
+        48,
+        144
+      ],
+      "layers.1.bias": [
+        48
+      ],
+      "layers.2.weight": [
+        48,
+        144
+      ],
+      "layers.2.bias": [
+        48
+      ],
+      "head.0.weight": [
+        96,
+        100
+      ],
+      "head.0.bias": [
+        96
+      ],
+      "head.3.weight": [
+        2,
+        96
+      ],
+      "head.3.bias": [
+        2
+      ]
+    }
+  },
+  "gnn_aml_network_v5_hi_medium_provisional.pt": {
+    "sha256": "627b5ce8a98dbee3e016b3fe274651fcaf2e5e3e03a06e68d494f1540b20481b",
+    "metadata": {
+      "model_name": "acurion_aml_network_v5_hi_medium_provisional",
+      "node_features": 5,
+      "edge_features": 14,
+      "global_features": 4,
+      "heads": [
+        "network_aml",
+        "additional_network_aml"
+      ],
+      "train_scenario": "HI-Medium",
+      "validation_scenario": "LI-Small",
+      "training": "fresh_init_label_blind_candidates",
+      "network_aml_threshold": 0.38466477394104004,
+      "best_epoch": 25,
+      "validation_metrics": {
+        "average_precision": 0.9804294915863003,
+        "precision": 0.8256880733944955,
+        "recall": 0.9574468085106383,
+        "f1": 0.8866995073891626,
+        "true_positives": 90,
+        "false_positives": 19
+      }
+    },
+    "state_shapes": {
+      "node_input.weight": [
+        48,
+        5
+      ],
+      "node_input.bias": [
+        48
+      ],
+      "edge_input.weight": [
+        48,
+        14
+      ],
+      "edge_input.bias": [
+        48
+      ],
+      "layers.0.weight": [
+        48,
+        144
+      ],
+      "layers.0.bias": [
+        48
+      ],
+      "layers.1.weight": [
+        48,
+        144
+      ],
+      "layers.1.bias": [
+        48
+      ],
+      "layers.2.weight": [
+        48,
+        144
+      ],
+      "layers.2.bias": [
+        48
+      ],
+      "head.0.weight": [
+        96,
+        100
+      ],
+      "head.0.bias": [
+        96
+      ],
+      "head.3.weight": [
+        2,
+        96
+      ],
+      "head.3.bias": [
+        2
+      ]
+    }
+  },
+  "gnn_directed_v2.pt": {
+    "sha256": "ecd096e4cdd4b5d6c2ae4cc838ea32d3ebace4a47a8f1bbc38f3f9755a50ac0c",
+    "metadata": {
+      "features": [
+        "log_amount_paid",
+        "log_amount_received",
+        "hour_of_day",
+        "day_of_week",
+        "cross_bank",
+        "same_account",
+        "same_entity",
+        "sender_metadata_found",
+        "receiver_metadata_found",
+        "sender_lifetime_sent_count",
+        "sender_lifetime_received_count",
+        "receiver_lifetime_sent_count",
+        "receiver_lifetime_received_count",
+        "sender_lifetime_unique_receivers",
+        "sender_lifetime_unique_senders",
+        "receiver_lifetime_unique_senders",
+        "receiver_lifetime_unique_receivers",
+        "sender_has_paid_receiver_before",
+        "sender_lifetime_sent_volume_same_currency",
+        "sender_lifetime_avg_sent_same_currency",
+        "sender_lifetime_std_sent_same_currency",
+        "sender_amount_deviation",
+        "receiver_lifetime_received_volume_same_currency",
+        "receiver_lifetime_avg_received_same_currency",
+        "receiver_lifetime_std_received_same_currency",
+        "receiver_amount_deviation",
+        "sender_history_age_days",
+        "receiver_history_age_days",
+        "sender_seconds_since_last_sent",
+        "receiver_seconds_since_last_received",
+        "sender_sent_count_24h",
+        "receiver_received_count_24h",
+        "sender_sent_volume_same_currency_24h",
+        "receiver_received_volume_same_currency_24h",
+        "sender_recent_in_count_same_currency_24h",
+        "sender_recent_in_volume_same_currency_24h",
+        "sender_outgoing_to_recent_incoming_ratio"
+      ],
+      "architecture": "DirectedGraphSAGE"
+    },
+    "state_shapes": {
+      "graph_weight": [],
+      "node_input.weight": [
+        48,
+        6
+      ],
+      "node_input.bias": [
+        48
+      ],
+      "conv1.weight": [
+        48,
+        144
+      ],
+      "conv1.bias": [
+        48
+      ],
+      "conv2.weight": [
+        48,
+        144
+      ],
+      "conv2.bias": [
+        48
+      ],
+      "transaction_network.0.weight": [
+        96,
+        37
+      ],
+      "transaction_network.0.bias": [
+        96
+      ],
+      "transaction_network.2.weight": [
+        48,
+        96
+      ],
+      "transaction_network.2.bias": [
+        48
+      ],
+      "graph_classifier.0.weight": [
+        96,
+        144
+      ],
+      "graph_classifier.0.bias": [
+        96
+      ],
+      "graph_classifier.3.weight": [
+        1,
+        96
+      ],
+      "graph_classifier.3.bias": [
+        1
+      ],
+      "transaction_classifier.weight": [
+        1,
+        48
+      ],
+      "transaction_classifier.bias": [
+        1
+      ]
+    }
+  },
+  "gnn_directed_v3.pt": {
+    "sha256": "858de69042325e30986a2d8de4054e8e7f037f7d3e27e11125df97ee7291f1ad",
+    "metadata": {
+      "features": [
+        "amount_paid",
+        "amount_received",
+        "log_amount_paid",
+        "log_amount_received",
+        "hour_of_day",
+        "day_of_week",
+        "cross_bank",
+        "same_account",
+        "same_entity",
+        "sender_metadata_found",
+        "receiver_metadata_found",
+        "sender_lifetime_sent_count",
+        "sender_lifetime_received_count",
+        "receiver_lifetime_sent_count",
+        "receiver_lifetime_received_count",
+        "sender_lifetime_unique_receivers",
+        "sender_lifetime_unique_senders",
+        "receiver_lifetime_unique_senders",
+        "receiver_lifetime_unique_receivers",
+        "sender_has_paid_receiver_before",
+        "sender_lifetime_sent_volume_same_currency",
+        "sender_lifetime_avg_sent_same_currency",
+        "sender_lifetime_std_sent_same_currency",
+        "sender_amount_deviation",
+        "receiver_lifetime_received_volume_same_currency",
+        "receiver_lifetime_avg_received_same_currency",
+        "receiver_lifetime_std_received_same_currency",
+        "receiver_amount_deviation",
+        "sender_history_age_days",
+        "receiver_history_age_days",
+        "sender_seconds_since_last_sent",
+        "receiver_seconds_since_last_received",
+        "sender_sent_count_24h",
+        "receiver_received_count_24h",
+        "sender_sent_volume_same_currency_24h",
+        "receiver_received_volume_same_currency_24h",
+        "sender_recent_in_count_same_currency_24h",
+        "sender_recent_in_volume_same_currency_24h",
+        "sender_outgoing_to_recent_incoming_ratio"
+      ],
+      "categories": {
+        "payment_currency": [
+          "Australian Dollar",
+          "Bitcoin",
+          "Brazil Real",
+          "Canadian Dollar",
+          "Euro",
+          "Mexican Peso",
+          "Ruble",
+          "Rupee",
+          "Saudi Riyal",
+          "Shekel",
+          "Swiss Franc",
+          "UK Pound",
+          "US Dollar",
+          "Yen",
+          "Yuan"
+        ],
+        "receiving_currency": [
+          "Australian Dollar",
+          "Bitcoin",
+          "Brazil Real",
+          "Canadian Dollar",
+          "Euro",
+          "Mexican Peso",
+          "Ruble",
+          "Rupee",
+          "Saudi Riyal",
+          "Shekel",
+          "Swiss Franc",
+          "UK Pound",
+          "US Dollar",
+          "Yen",
+          "Yuan"
+        ],
+        "payment_format": [
+          "ACH",
+          "Bitcoin",
+          "Cash",
+          "Cheque",
+          "Credit Card",
+          "Reinvestment",
+          "Wire"
+        ]
+      },
+      "architecture": "directed GraphSAGE"
+    },
+    "state_shapes": {
+      "input.weight": [
+        48,
+        4
+      ],
+      "input.bias": [
+        48
+      ],
+      "conv1.weight": [
+        48,
+        144
+      ],
+      "conv1.bias": [
+        48
+      ],
+      "conv2.weight": [
+        48,
+        144
+      ],
+      "conv2.bias": [
+        48
+      ],
+      "edge.0.weight": [
+        96,
+        76
+      ],
+      "edge.0.bias": [
+        96
+      ],
+      "edge.2.weight": [
+        48,
+        96
+      ],
+      "edge.2.bias": [
+        48
+      ],
+      "output.0.weight": [
+        96,
+        144
+      ],
+      "output.0.bias": [
+        96
+      ],
+      "output.3.weight": [
+        1,
+        96
+      ],
+      "output.3.bias": [
+        1
+      ]
+    }
+  },
+  "gnn_graphsage_baseline.pt": {
+    "sha256": "552c488f6e4e78feab263c0197f582ac12609acf0c7a7d75ce6df4c204613f30",
+    "metadata": {
+      "features": [
+        "log_amount_paid",
+        "log_amount_received",
+        "hour_of_day",
+        "day_of_week",
+        "cross_bank",
+        "same_account",
+        "same_entity",
+        "sender_lifetime_sent_count",
+        "sender_lifetime_received_count",
+        "receiver_lifetime_sent_count",
+        "receiver_lifetime_received_count",
+        "sender_lifetime_unique_receivers",
+        "receiver_lifetime_unique_senders",
+        "sender_sent_count_24h",
+        "receiver_received_count_24h",
+        "sender_seconds_since_last_sent",
+        "receiver_seconds_since_last_received",
+        "sender_outgoing_to_recent_incoming_ratio"
+      ],
+      "architecture": "two-layer full-neighbourhood GraphSAGE",
+      "history_limit": 300000
+    },
+    "state_shapes": {
+      "input.weight": [
+        32,
+        4
+      ],
+      "input.bias": [
+        32
+      ],
+      "conv1.weight": [
+        32,
+        64
+      ],
+      "conv1.bias": [
+        32
+      ],
+      "conv2.weight": [
+        32,
+        64
+      ],
+      "conv2.bias": [
+        32
+      ],
+      "classifier.0.weight": [
+        64,
+        82
+      ],
+      "classifier.0.bias": [
+        64
+      ],
+      "classifier.3.weight": [
+        1,
+        64
+      ],
+      "classifier.3.bias": [
+        1
+      ]
+    }
+  },
+  "gnn_mixed_network_v3.pt": {
+    "sha256": "75c188e81f1e98852fd09057ab10e72f2e0e3a8730f61c9cb8fa6bd06cce8cd4",
+    "metadata": {
+      "model_name": "acurion_mixed_network_v3",
+      "node_features": 5,
+      "edge_features": 14,
+      "global_features": 4,
+      "hidden": 48,
+      "payment_formats": [
+        "ACH",
+        "CHEQUE",
+        "CREDIT CARD",
+        "CASH",
+        "BITCOIN",
+        "WIRE",
+        "OTHER"
+      ],
+      "target": "additional_historical_laundering_transfer_in_candidate",
+      "train_scenario": "LI-Small",
+      "validation_scenario": "HI-Medium",
+      "validation_ap": 0.8082473331693732,
+      "validation_threshold": 0.8591346740722656,
+      "validation_metrics": {
+        "average_precision": 0.8082473331693732,
+        "precision": 0.7784810126582279,
+        "recall": 0.6758241758241759,
+        "f1": 0.7235294117647059,
+        "normal_false_positives": 35,
+        "false_positive_rate": 0.04964539007092199,
+        "true_positives": 123,
+        "total_positives": 182,
+        "total_negatives": 705
+      },
+      "best_epoch": 18
+    },
+    "state_shapes": {
+      "node_input.weight": [
+        48,
+        5
+      ],
+      "node_input.bias": [
+        48
+      ],
+      "edge_input.weight": [
+        48,
+        14
+      ],
+      "edge_input.bias": [
+        48
+      ],
+      "layers.0.weight": [
+        48,
+        144
+      ],
+      "layers.0.bias": [
+        48
+      ],
+      "layers.1.weight": [
+        48,
+        144
+      ],
+      "layers.1.bias": [
+        48
+      ],
+      "layers.2.weight": [
+        48,
+        144
+      ],
+      "layers.2.bias": [
+        48
+      ],
+      "head.0.weight": [
+        96,
+        100
+      ],
+      "head.0.bias": [
+        96
+      ],
+      "head.3.weight": [
+        1,
+        96
+      ],
+      "head.3.bias": [
+        1
+      ]
+    }
+  },
+  "gnn_network_patterns_v1.pt": {
+    "sha256": "988d537eeb4818abe1a929d01c728847eea8906fb0a9b23a8d5f6befb8b19ff9",
+    "metadata": {
+      "classes": [
+        "NORMAL",
+        "BIPARTITE",
+        "CYCLE",
+        "FAN-IN",
+        "FAN-OUT",
+        "GATHER-SCATTER",
+        "RANDOM",
+        "SCATTER-GATHER",
+        "STACK"
+      ],
+      "architecture": "3-layer directed graph-level GNN",
+      "node_features": 5,
+      "edge_features": 6,
+      "global_features": 4,
+      "validation_threshold": 0.534054696559906
+    },
+    "state_shapes": {
+      "input.weight": [
+        48,
+        5
+      ],
+      "input.bias": [
+        48
+      ],
+      "edge_encoder.weight": [
+        48,
+        6
+      ],
+      "edge_encoder.bias": [
+        48
+      ],
+      "layers.0.weight": [
+        48,
+        144
+      ],
+      "layers.0.bias": [
+        48
+      ],
+      "layers.1.weight": [
+        48,
+        144
+      ],
+      "layers.1.bias": [
+        48
+      ],
+      "layers.2.weight": [
+        48,
+        144
+      ],
+      "layers.2.bias": [
+        48
+      ],
+      "head.0.weight": [
+        96,
+        100
+      ],
+      "head.0.bias": [
+        96
+      ],
+      "binary.weight": [
+        1,
+        96
+      ],
+      "binary.bias": [
+        1
+      ],
+      "pattern.weight": [
+        8,
+        96
+      ],
+      "pattern.bias": [
+        8
+      ]
+    }
+  },
+  "gnn_network_patterns_v2.pt": {
+    "sha256": "4abfbd6efee987223b78c35932c6fb03274207555a0f06c8b2d099505c0bc052",
+    "metadata": {
+      "classes": [
+        "NORMAL",
+        "BIPARTITE",
+        "CYCLE",
+        "FAN-IN",
+        "FAN-OUT",
+        "GATHER-SCATTER",
+        "RANDOM",
+        "SCATTER-GATHER",
+        "STACK"
+      ],
+      "validation_threshold": 0.963883638381958,
+      "architecture": "DirectedNetworkGNN v2",
+      "node_features": 5,
+      "edge_features": 6,
+      "global_features": 4
+    },
+    "state_shapes": {
+      "input.weight": [
+        48,
+        5
+      ],
+      "input.bias": [
+        48
+      ],
+      "edge_encoder.weight": [
+        48,
+        6
+      ],
+      "edge_encoder.bias": [
+        48
+      ],
+      "layers.0.weight": [
+        48,
+        144
+      ],
+      "layers.0.bias": [
+        48
+      ],
+      "layers.1.weight": [
+        48,
+        144
+      ],
+      "layers.1.bias": [
+        48
+      ],
+      "layers.2.weight": [
+        48,
+        144
+      ],
+      "layers.2.bias": [
+        48
+      ],
+      "head.0.weight": [
+        96,
+        100
+      ],
+      "head.0.bias": [
+        96
+      ],
+      "binary.weight": [
+        1,
+        96
+      ],
+      "binary.bias": [
+        1
+      ],
+      "pattern.weight": [
+        8,
+        96
+      ],
+      "pattern.bias": [
+        8
+      ]
+    }
+  },
+  "gnn_data/HI-Medium_v3_validation.pt": {
+    "keys": [
+      "scenario",
+      "target",
+      "payment_formats",
+      "graphs",
+      "source_transactions",
+      "selection"
+    ],
+    "metadata": {
+      "scenario": "HI-Medium",
+      "target": "additional_historical_laundering_transfer_in_candidate",
+      "payment_formats": [
+        "ACH",
+        "CHEQUE",
+        "CREDIT CARD",
+        "CASH",
+        "BITCOIN",
+        "WIRE",
+        "OTHER"
+      ],
+      "source_transactions": 31898238,
+      "selection": "stratified_training_seeds_plus_label_free_prior_connected_expansion"
+    },
+    "graphs": 887,
+    "graph_keys": [
+      "node",
+      "src",
+      "dst",
+      "edge",
+      "global",
+      "label",
+      "scenario",
+      "seed_id",
+      "extra_label_count"
+    ]
+  },
+  "gnn_data/HI-Medium_v5_label_blind.pt": {
+    "keys": [
+      "scenario",
+      "target",
+      "selection",
+      "payment_formats",
+      "graphs"
+    ],
+    "metadata": {
+      "scenario": "HI-Medium",
+      "target": "network_contains_laundering",
+      "selection": "label_blind_structural_seeds_nine_day_connected_networks",
+      "payment_formats": [
+        "ACH",
+        "CHEQUE",
+        "CREDIT CARD",
+        "CASH",
+        "BITCOIN",
+        "WIRE",
+        "OTHER"
+      ]
+    },
+    "graphs": 3944,
+    "graph_keys": [
+      "node",
+      "src",
+      "dst",
+      "edge",
+      "global",
+      "label",
+      "scenario",
+      "aux_label",
+      "seed_id",
+      "seed_timestamp"
+    ]
+  },
+  "gnn_data/LI-Small_v3_candidates.pt": {
+    "keys": [
+      "scenario",
+      "target",
+      "payment_formats",
+      "graphs",
+      "source_transactions",
+      "selection"
+    ],
+    "metadata": {
+      "scenario": "LI-Small",
+      "target": "additional_historical_laundering_transfer_in_candidate",
+      "payment_formats": [
+        "ACH",
+        "CHEQUE",
+        "CREDIT CARD",
+        "CASH",
+        "BITCOIN",
+        "WIRE",
+        "OTHER"
+      ],
+      "source_transactions": 6924049,
+      "selection": "stratified_training_seeds_plus_label_free_prior_connected_expansion"
+    },
+    "graphs": 1480,
+    "graph_keys": [
+      "node",
+      "src",
+      "dst",
+      "edge",
+      "global",
+      "label",
+      "scenario",
+      "seed_id",
+      "extra_label_count"
+    ]
+  },
+  "gnn_data/LI-Small_v5_label_blind.pt": {
+    "keys": [
+      "scenario",
+      "target",
+      "selection",
+      "payment_formats",
+      "graphs"
+    ],
+    "metadata": {
+      "scenario": "LI-Small",
+      "target": "network_contains_laundering",
+      "selection": "label_blind_structural_seeds_nine_day_connected_networks",
+      "payment_formats": [
+        "ACH",
+        "CHEQUE",
+        "CREDIT CARD",
+        "CASH",
+        "BITCOIN",
+        "WIRE",
+        "OTHER"
+      ]
+    },
+    "graphs": 484,
+    "graph_keys": [
+      "node",
+      "src",
+      "dst",
+      "edge",
+      "global",
+      "label",
+      "scenario",
+      "aux_label",
+      "seed_id",
+      "seed_timestamp"
+    ]
+  },
+  "evaluation_cache": {
+    "keys": [
+      "graphs",
+      "members",
+      "seed_ids",
+      "source",
+      "date",
+      "selection",
+      "lookback_days"
+    ],
+    "metadata": {
+      "source": "HI-Small",
+      "date": "2022-09-09",
+      "selection": "structural_label_blind",
+      "lookback_days": 9
+    },
+    "lengths": {
+      "graphs": 400,
+      "members": 400,
+      "seed_ids": 400
+    },
+    "graph_keys": [
+      "node",
+      "src",
+      "dst",
+      "edge",
+      "global",
+      "label",
+      "scenario"
+    ]
+  },
+  "npz": {
+    "validation_xgb_sorted": {
+      "shape": [
+        965524
+      ],
+      "dtype": "float32"
+    },
+    "validation_gnn_sorted": {
+      "shape": [
+        965524
+      ],
+      "dtype": "float32"
+    }
+  }
+}

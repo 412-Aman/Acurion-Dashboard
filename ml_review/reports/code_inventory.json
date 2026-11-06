@@ -1,0 +1,1093 @@
+[
+  {
+    "path": "README.md",
+    "lines": 27,
+    "sha256": "ea89db09e9c0299cd7809d0e51cebc1e6df0f2449e05fc4d20d374ea101c6038",
+    "parse": "Not a standalone Python source"
+  },
+  {
+    "path": "aml_engine.py",
+    "lines": 339,
+    "sha256": "6ae1a60216a3117fcf8245e3764f8314da00809e9b2b03a3b37031dce3e4d17a",
+    "purpose": "Acurion: general transaction validation and AML pattern detection.\n\nThese are investigation indicators, not proof of money laundering.",
+    "definitions": [
+      {
+        "name": "load_transactions",
+        "line": 24
+      },
+      {
+        "name": "analyse",
+        "line": 162
+      },
+      {
+        "name": "main",
+        "line": 313
+      }
+    ]
+  },
+  {
+    "path": "build_aml_graph.py",
+    "lines": 179,
+    "sha256": "ee1a520dd80941f08f5f748214af016668c8bfb68309087add296dbeea25d67f",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "normalize_bank",
+        "line": 21
+      },
+      {
+        "name": "normalize_account",
+        "line": 26
+      },
+      {
+        "name": "build_graph",
+        "line": 30
+      }
+    ]
+  },
+  {
+    "path": "check_negative_volumes.py",
+    "lines": 30,
+    "sha256": "94a13eb8dca534d8d96448c1a69bf8c4dbeeb496481f1f1dd0843c52a39031ce",
+    "purpose": "",
+    "definitions": []
+  },
+  {
+    "path": "data_adapter.py",
+    "lines": 298,
+    "sha256": "807c5f6feb1f89b0f616b4756b11533a6f3e6b46dafcdc5833ae9e8420c5866b",
+    "purpose": "Acurion dataset adapter: map supported transaction data to common columns.\n\nNo training labels are used to generate inputs. Unknown fields are preserved.\nThis module handles column mapping only; it does NOT make a dataset suitable\nfor a particular trained model without feature and compatibility checks.\n\nPublic interface retained: map_columns(df, custom_mapping=None,\n                                       dataset_type=None, dataset_id=None).\nAdditional optional row_offset enables unique IDs across streamed batches.",
+    "definitions": [
+      {
+        "name": "normalise_name",
+        "line": 49
+      },
+      {
+        "name": "_column_lookup",
+        "line": 54
+      },
+      {
+        "name": "_dataset_id",
+        "line": 68
+      },
+      {
+        "name": "_create_ids",
+        "line": 81
+      },
+      {
+        "name": "_normalize_ibm_account",
+        "line": 95
+      },
+      {
+        "name": "_map_ibm",
+        "line": 104
+      },
+      {
+        "name": "_map_generic",
+        "line": 133
+      },
+      {
+        "name": "_check_ids_and_money",
+        "line": 171
+      },
+      {
+        "name": "_check_time",
+        "line": 188
+      },
+      {
+        "name": "map_columns",
+        "line": 233
+      }
+    ]
+  },
+  {
+    "path": "data_pipeline.py",
+    "lines": 41,
+    "sha256": "d748687c0e0e0f86f7fe43dc55408e6a2c4819fd5b9aab8611aa815e08cf3bdb",
+    "purpose": "Convert a CSV into Parquet without hardcoding input or output paths.",
+    "definitions": [
+      {
+        "name": "convert_csv_to_parquet",
+        "line": 9
+      }
+    ]
+  },
+  {
+    "path": "detect_aml_networks.py",
+    "lines": 1221,
+    "sha256": "50bc698a347930a88cc4425caa05d0ffe914f16413d5367d3a034b83148ffd51",
+    "purpose": "Acurion: selective network detection from existing XGBoost traces.\n\nRun:\n    python detect_aml_networks.py\n\nUses existing network tracing results.\nIBM annotations are used ONLY for offline evaluation.",
+    "definitions": [
+      {
+        "name": "Transfer",
+        "line": 44
+      },
+      {
+        "name": "normalize_key",
+        "line": 51
+      },
+      {
+        "name": "load_inputs",
+        "line": 60
+      },
+      {
+        "name": "select_networks",
+        "line": 178
+      },
+      {
+        "name": "evaluate",
+        "line": 412
+      },
+      {
+        "name": "main",
+        "line": 579
+      },
+      {
+        "name": "graph_from_transactions",
+        "line": 765
+      },
+      {
+        "name": "read_transaction_details",
+        "line": 838
+      },
+      {
+        "name": "candidate_transfer_ids",
+        "line": 915
+      },
+      {
+        "name": "connected_ach_subset",
+        "line": 963
+      },
+      {
+        "name": "run_gnn",
+        "line": 1006
+      }
+    ]
+  },
+  {
+    "path": "detect_aml_networks.py.bak",
+    "lines": 761,
+    "sha256": "f28f2e08f60678b52f8e23de243a8c95b38cc21e3e15caae034866f42ae0467a",
+    "purpose": "Acurion: selective network detection from existing XGBoost traces.\n\nRun:\n    python detect_aml_networks.py\n\nUses existing network tracing results.\nIBM annotations are used ONLY for offline evaluation.",
+    "definitions": [
+      {
+        "name": "Transfer",
+        "line": 44
+      },
+      {
+        "name": "normalize_key",
+        "line": 51
+      },
+      {
+        "name": "load_inputs",
+        "line": 60
+      },
+      {
+        "name": "select_networks",
+        "line": 181
+      },
+      {
+        "name": "evaluate",
+        "line": 415
+      },
+      {
+        "name": "main",
+        "line": 582
+      }
+    ]
+  },
+  {
+    "path": "evaluate_aml_attempts.py",
+    "lines": 355,
+    "sha256": "80f4d3257f63eabf83d7760f6ffe3cef74d61c7f279d201fe5748f1c3bde9569",
+    "purpose": "Match IBM laundering network annotations to transaction IDs.\n\nOffline evaluation only. Never use annotation membership as\nan AI training feature or as a live detection signal.",
+    "definitions": [
+      {
+        "name": "normalize_bank",
+        "line": 36
+      },
+      {
+        "name": "read_annotations",
+        "line": 40
+      },
+      {
+        "name": "match_transactions",
+        "line": 106
+      },
+      {
+        "name": "main",
+        "line": 184
+      }
+    ]
+  },
+  {
+    "path": "evaluate_aml_v4.py",
+    "lines": 449,
+    "sha256": "6b6fbaa7b4949bc1d7c7952568e58f57af7480cfc382f40ef6e158f3dbd6dc4e",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "report",
+        "line": 307
+      }
+    ]
+  },
+  {
+    "path": "evaluate_network_seeds.py",
+    "lines": 303,
+    "sha256": "b20d62abd4d7add3e3aa6bc5d31060c2730786c13e100328e6eb36637abf9aca",
+    "purpose": "Evaluate XGBoost detections as starting points for AML network tracing.\n\nUses the previously trained v3 XGBoost model.\nDoes not use labels or IBM pattern annotations to select transactions.",
+    "definitions": [
+      {
+        "name": "main",
+        "line": 34
+      }
+    ]
+  },
+  {
+    "path": "firebase_aml_upload.py",
+    "lines": 61,
+    "sha256": "41e0a0826c15e840681e96a69103576f4cc8d438d0c935d98c4c0b29dbb3ae64",
+    "purpose": "Send Acurion's AML detection results to Firebase.",
+    "definitions": [
+      {
+        "name": "main",
+        "line": 17
+      }
+    ]
+  },
+  {
+    "path": "independent_aml_probe.py",
+    "lines": 727,
+    "sha256": "5ba135143809625a8446aad5a1214d64967bcf82bf2275cb193bec04a930dfb4",
+    "purpose": "Acurion: independent AML network discovery pilot.\n\nUses past transaction connections to discover networks.\nDoes not use XGBoost scores or laundering labels for discovery.\nDoes not modify existing models or files.",
+    "definitions": [
+      {
+        "name": "connected_history",
+        "line": 302
+      }
+    ]
+  },
+  {
+    "path": "independent_aml_probe_9day.py",
+    "lines": 952,
+    "sha256": "d886c9c53c4a786f93e510473d684d933ad7e333250d995405247aec956d10c0",
+    "purpose": "Acurion: Nine-day independent AML network discovery.\n\nUses the same structural seed-selection approach as our first pilot,\nbut gives the GNN up to nine days of earlier transactions.\n\nNo fraud labels or XGBoost scores are used for selecting networks.\nNo existing models or results are overwritten.",
+    "definitions": [
+      {
+        "name": "stamp",
+        "line": 53
+      },
+      {
+        "name": "compare_network_detector",
+        "line": 895
+      }
+    ]
+  },
+  {
+    "path": "independent_aml_probe_9day_compare.py",
+    "lines": 1087,
+    "sha256": "c8c3c443b86dd77b66d116214649f788d878814b0601d2ae31495b37ee66674b",
+    "purpose": "Acurion: Nine-day independent AML network discovery.\n\nUses the same structural seed-selection approach as our first pilot,\nbut gives the GNN up to nine days of earlier transactions.\n\nNo fraud labels or XGBoost scores are used for selecting networks.\nNo existing models or results are overwritten.",
+    "definitions": [
+      {
+        "name": "stamp",
+        "line": 53
+      },
+      {
+        "name": "compare",
+        "line": 870
+      },
+      {
+        "name": "detailed_report",
+        "line": 998
+      }
+    ]
+  },
+  {
+    "path": "independent_aml_probe_9day_compare.py.before_early_v5.bak",
+    "lines": 918,
+    "sha256": "e3aa2c02fa3452a0e4ac09cffeaba7ccfefe3cb6e2ae0b3ed3c462f5365ad01a",
+    "purpose": "Acurion: Nine-day independent AML network discovery.\n\nUses the same structural seed-selection approach as our first pilot,\nbut gives the GNN up to nine days of earlier transactions.\n\nNo fraud labels or XGBoost scores are used for selecting networks.\nNo existing models or results are overwritten.",
+    "definitions": [
+      {
+        "name": "stamp",
+        "line": 53
+      },
+      {
+        "name": "compare",
+        "line": 870
+      }
+    ]
+  },
+  {
+    "path": "independent_aml_probe_9day_compare.py.before_v5.bak",
+    "lines": 813,
+    "sha256": "109763724262478d548c41005101e540876f3672a4d471cc77242091ebdc9db2",
+    "purpose": "Acurion: Nine-day independent AML network discovery.\n\nUses the same structural seed-selection approach as our first pilot,\nbut gives the GNN up to nine days of earlier transactions.\n\nNo fraud labels or XGBoost scores are used for selecting networks.\nNo existing models or results are overwritten.",
+    "definitions": [
+      {
+        "name": "stamp",
+        "line": 53
+      }
+    ]
+  },
+  {
+    "path": "prepare_aml_network_v5.py",
+    "lines": 724,
+    "sha256": "c6856694d6afe92db0fcb50e1568dcea92c5dd58faee530210764ac5dbe818c5",
+    "purpose": "Acurion V5: realistic AML network training examples.\n\nNetworks are selected WITHOUT laundering labels.\nLabels are attached only AFTER network discovery.\n\nExisting XGBoost and GNN checkpoints are not modified.",
+    "definitions": [
+      {
+        "name": "import_history",
+        "line": 47
+      },
+      {
+        "name": "select_seeds",
+        "line": 206
+      },
+      {
+        "name": "build_network",
+        "line": 370
+      },
+      {
+        "name": "make_graph",
+        "line": 478
+      },
+      {
+        "name": "main",
+        "line": 561
+      }
+    ]
+  },
+  {
+    "path": "prepare_full_history.py",
+    "lines": 1190,
+    "sha256": "2742f30cf0e9d98bad0a643eec8b652092ed0747a422c14d587921c453210f1d",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "normalize_bank",
+        "line": 38
+      },
+      {
+        "name": "normalize_account",
+        "line": 43
+      },
+      {
+        "name": "account_key",
+        "line": 47
+      },
+      {
+        "name": "load_accounts",
+        "line": 54
+      },
+      {
+        "name": "AccountHistory",
+        "line": 86
+      },
+      {
+        "name": "average_amount",
+        "line": 133
+      },
+      {
+        "name": "std_amount",
+        "line": 138
+      },
+      {
+        "name": "amount_deviation",
+        "line": 153
+      },
+      {
+        "name": "generate_features",
+        "line": 172
+      },
+      {
+        "name": "update_history",
+        "line": 416
+      },
+      {
+        "name": "legacy_main",
+        "line": 476
+      },
+      {
+        "name": "_split_bank_account",
+        "line": 677
+      },
+      {
+        "name": "_normalize_ibm_time",
+        "line": 702
+      },
+      {
+        "name": "prepare_from_standardized",
+        "line": 734
+      },
+      {
+        "name": "cli",
+        "line": 1097
+      }
+    ]
+  },
+  {
+    "path": "prepare_full_history_backup_20261016_082043.bak",
+    "lines": 666,
+    "sha256": "98f728e3c875817f7571b30ad66b1195f61dc875f436ce39fd7b8a783e96a6c8",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "normalize_bank",
+        "line": 38
+      },
+      {
+        "name": "normalize_account",
+        "line": 43
+      },
+      {
+        "name": "account_key",
+        "line": 47
+      },
+      {
+        "name": "load_accounts",
+        "line": 54
+      },
+      {
+        "name": "AccountHistory",
+        "line": 86
+      },
+      {
+        "name": "average_amount",
+        "line": 133
+      },
+      {
+        "name": "std_amount",
+        "line": 138
+      },
+      {
+        "name": "amount_deviation",
+        "line": 153
+      },
+      {
+        "name": "generate_features",
+        "line": 172
+      },
+      {
+        "name": "update_history",
+        "line": 412
+      },
+      {
+        "name": "main",
+        "line": 472
+      }
+    ]
+  },
+  {
+    "path": "prepare_ml_data.py",
+    "lines": 898,
+    "sha256": "7cb52c19375f1dce21541c1c8fe11035262c1df2ee80562fb73b90d0b3f85a31",
+    "purpose": "Acurion IBM AML feature preparation.\n\nThis script preserves the original HI-Small feature calculations used to train\nXGBoost. Use --dataset to prepare another IBM scenario without editing code.\nPreview runs use a separate output name and are NOT valid model evaluations.",
+    "definitions": [
+      {
+        "name": "normalize_bank",
+        "line": 44
+      },
+      {
+        "name": "normalize_account",
+        "line": 49
+      },
+      {
+        "name": "account_key",
+        "line": 53
+      },
+      {
+        "name": "load_accounts",
+        "line": 64
+      },
+      {
+        "name": "AccountHistory",
+        "line": 97
+      },
+      {
+        "name": "currency_volume",
+        "line": 128
+      },
+      {
+        "name": "make_features",
+        "line": 140
+      },
+      {
+        "name": "update_history",
+        "line": 291
+      },
+      {
+        "name": "main",
+        "line": 325
+      },
+      {
+        "name": "_quoted_identifier",
+        "line": 552
+      },
+      {
+        "name": "_first_column",
+        "line": 557
+      },
+      {
+        "name": "_parsed_time",
+        "line": 566
+      },
+      {
+        "name": "_generic_features",
+        "line": 574
+      },
+      {
+        "name": "process_standardized_data",
+        "line": 662
+      },
+      {
+        "name": "configure_from_cli",
+        "line": 852
+      }
+    ]
+  },
+  {
+    "path": "prepare_ml_data_backup_20261016_075559.bak",
+    "lines": 525,
+    "sha256": "0eaacf24ede8bb6c0445698db8b1167ff5eeecfac0d2f322e16e541d5bb0e112",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "normalize_bank",
+        "line": 36
+      },
+      {
+        "name": "normalize_account",
+        "line": 41
+      },
+      {
+        "name": "account_key",
+        "line": 45
+      },
+      {
+        "name": "load_accounts",
+        "line": 56
+      },
+      {
+        "name": "AccountHistory",
+        "line": 89
+      },
+      {
+        "name": "currency_volume",
+        "line": 120
+      },
+      {
+        "name": "make_features",
+        "line": 132
+      },
+      {
+        "name": "update_history",
+        "line": 283
+      },
+      {
+        "name": "main",
+        "line": 317
+      }
+    ]
+  },
+  {
+    "path": "prepare_network_gnn_v3.py",
+    "lines": 569,
+    "sha256": "2557ecf330f5240e15a4666458a1453e389864d200c0164509defeeeb6d730d1",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "to_epoch",
+        "line": 37
+      },
+      {
+        "name": "ingest",
+        "line": 45
+      },
+      {
+        "name": "select_seeds",
+        "line": 205
+      },
+      {
+        "name": "discover",
+        "line": 247
+      },
+      {
+        "name": "make_example",
+        "line": 331
+      },
+      {
+        "name": "main",
+        "line": 400
+      }
+    ]
+  },
+  {
+    "path": "requirements.txt",
+    "lines": 3,
+    "sha256": "c3898cdab2e8a8b8f996b9be92b0c843463ca071288d956e2065e72d394423a6",
+    "parse": "Not a standalone Python source"
+  },
+  {
+    "path": "standardize_data.py",
+    "lines": 240,
+    "sha256": "7e74e950a8f170b11eadfb7026ec4c7eb3206ac2ac0923d4c5138232f5ce33dc",
+    "purpose": "Acurion common-transaction standardization.\n\nCLI: stream CSV or Parquet in batches to a NEW Parquet file.\n\nThe existing standardize_data(...) Python API is retained for small inputs;\nit returns a pandas DataFrame as before. For large inputs, use the CLI or\nstream_standardize_data(...) to avoid collecting the file in memory.\n\nThis step only standardizes data. It does not run XGBoost/GNN, and a common\ntransaction schema is not itself a guarantee of model compatibility.",
+    "definitions": [
+      {
+        "name": "_check_paths",
+        "line": 30
+      },
+      {
+        "name": "_read_small",
+        "line": 46
+      },
+      {
+        "name": "standardize_data",
+        "line": 53
+      },
+      {
+        "name": "_read_batches",
+        "line": 88
+      },
+      {
+        "name": "stream_standardize_data",
+        "line": 111
+      },
+      {
+        "name": "main",
+        "line": 207
+      }
+    ]
+  },
+  {
+    "path": "standardize_data_backup.py.bak",
+    "lines": 128,
+    "sha256": "2f7b0abce7767331f290e14cf7b08d4163a9899a3438db8e7a2031aa6b9fe1da",
+    "purpose": "Standardize financial datasets into Acurion's common format.",
+    "definitions": [
+      {
+        "name": "standardize_data",
+        "line": 12
+      }
+    ]
+  },
+  {
+    "path": "test_aml_engine.py",
+    "lines": 206,
+    "sha256": "f4844f132d8a16816b0c0d5dae08d37444e25a94a526d7aaa02eaf15ef849dbb",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "test_expected_demo",
+        "line": 6
+      },
+      {
+        "name": "test_normal_activity_has_no_alerts",
+        "line": 14
+      },
+      {
+        "name": "test_rejects_missing_columns",
+        "line": 20
+      },
+      {
+        "name": "test_rejects_duplicate_ids",
+        "line": 27
+      },
+      {
+        "name": "test_reverse_time_does_not_trigger_pass_through",
+        "line": 34
+      },
+      {
+        "name": "test_rejects_mixed_currencies",
+        "line": 40
+      },
+      {
+        "name": "test_parquet_integration",
+        "line": 46
+      },
+      {
+        "name": "test_custom_column_mapping",
+        "line": 75
+      },
+      {
+        "name": "test_simulated_hours_detect_money_flow",
+        "line": 127
+      },
+      {
+        "name": "test_simulated_hours_do_not_invent_order",
+        "line": 149
+      },
+      {
+        "name": "test_date_only_does_not_invent_minutes",
+        "line": 169
+      },
+      {
+        "name": "test_invalid_simulated_hours_are_rejected",
+        "line": 190
+      }
+    ]
+  },
+  {
+    "path": "test_data_pipeline.py",
+    "lines": 364,
+    "sha256": "da487988dabf3cee01e63e94e63f6c767ed82355dcbc328a6f28bb839d625ac0",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "test_different_datasets_use_same_mapping_system",
+        "line": 9
+      },
+      {
+        "name": "test_paysim_preserves_original_information",
+        "line": 45
+      },
+      {
+        "name": "test_invalid_paysim_time_is_rejected",
+        "line": 71
+      },
+      {
+        "name": "test_complete_bank_data_flow",
+        "line": 91
+      },
+      {
+        "name": "test_csv_to_parquet_preserves_data",
+        "line": 125
+      },
+      {
+        "name": "test_standardization_preserves_extra_columns",
+        "line": 155
+      },
+      {
+        "name": "test_complete_csv_to_aml_pipeline",
+        "line": 190
+      },
+      {
+        "name": "test_pipeline_rejects_missing_input",
+        "line": 233
+      },
+      {
+        "name": "test_adapter_recognizes_date_only",
+        "line": 244
+      },
+      {
+        "name": "test_adapter_recognizes_full_timestamp",
+        "line": 261
+      },
+      {
+        "name": "test_adapter_rejects_mixed_time_precision",
+        "line": 278
+      },
+      {
+        "name": "test_standardization_preserves_time_format",
+        "line": 304
+      },
+      {
+        "name": "test_paysim_complete_standardization_pipeline",
+        "line": 330
+      }
+    ]
+  },
+  {
+    "path": "train_aml_network_v4.py",
+    "lines": 568,
+    "sha256": "84e5abd088bf9f7bc4fbf8c74c3f92b7fec08625d3ff01df1287add204fd3775",
+    "purpose": "Acurion V4: AML network-risk GNN.\n\nReuses V3's learned graph features.\nPredicts:\n1. Whether a connected network contains labelled laundering.\n2. Whether laundering extends beyond the seed transaction.\n\nGNN V2 remains the laundering-pattern detector.\nExisting models and graph datasets are not overwritten.",
+    "definitions": [
+      {
+        "name": "read_seed_labels",
+        "line": 39
+      },
+      {
+        "name": "relabel",
+        "line": 86
+      },
+      {
+        "name": "batch_examples",
+        "line": 143
+      },
+      {
+        "name": "build_model",
+        "line": 164
+      },
+      {
+        "name": "predict",
+        "line": 222
+      },
+      {
+        "name": "main",
+        "line": 254
+      }
+    ]
+  },
+  {
+    "path": "train_aml_network_v5.py",
+    "lines": 568,
+    "sha256": "201a9c030639503ba22566fd16d7054f3686338dda789e75bb4a95e3a4eaf17d",
+    "purpose": "Acurion V5: AML network detection.\n\nTrain on HI-Medium label-blind network candidates.\nValidate on LI-Small label-blind network candidates.\nStart with fresh GNN weights to avoid V4 validation leakage.\n\nNever overwrite earlier model checkpoints.",
+    "definitions": [
+      {
+        "name": "read_graphs",
+        "line": 35
+      },
+      {
+        "name": "make_batch",
+        "line": 121
+      },
+      {
+        "name": "predict",
+        "line": 136
+      },
+      {
+        "name": "choose_threshold",
+        "line": 158
+      },
+      {
+        "name": "main",
+        "line": 174
+      }
+    ]
+  },
+  {
+    "path": "train_aml_network_v5_early.py",
+    "lines": 586,
+    "sha256": "cc881588317b0f26727048f6c7564bb9f0864edffa4b7f0f7664266e8bd2abba",
+    "purpose": "Acurion V5: AML network detection.\n\nTrain on HI-Medium label-blind network candidates.\nValidate on LI-Small label-blind network candidates.\nStart with fresh GNN weights to avoid V4 validation leakage.\n\nNever overwrite earlier model checkpoints.",
+    "definitions": [
+      {
+        "name": "read_graphs",
+        "line": 35
+      },
+      {
+        "name": "make_batch",
+        "line": 121
+      },
+      {
+        "name": "predict",
+        "line": 136
+      },
+      {
+        "name": "choose_threshold",
+        "line": 158
+      },
+      {
+        "name": "main",
+        "line": 174
+      }
+    ]
+  },
+  {
+    "path": "train_gnn.py",
+    "lines": 1030,
+    "sha256": "8af53979cedbf440b66e2c829d33ee63d2dbea084c45a3f085c2d843cf109ecf",
+    "purpose": "Acurion: train a directed GNN with difficult normal-looking networks.\n\nReplace the existing train_gnn.py.\nUses the IBM graph cache created by the previous training run.\nDoes not modify XGBoost or the older saved GNN models.\n\nSynthetic lookalikes are test/training controls, not proven\nlegitimate networks.",
+    "definitions": [
+      {
+        "name": "load_cache",
+        "line": 72
+      },
+      {
+        "name": "make_control",
+        "line": 123
+      },
+      {
+        "name": "prepare",
+        "line": 215
+      },
+      {
+        "name": "collate",
+        "line": 297
+      },
+      {
+        "name": "DirectedNetworkGNN",
+        "line": 348
+      },
+      {
+        "name": "infer",
+        "line": 487
+      },
+      {
+        "name": "performance",
+        "line": 531
+      },
+      {
+        "name": "threshold_from_validation",
+        "line": 622
+      },
+      {
+        "name": "main",
+        "line": 683
+      }
+    ]
+  },
+  {
+    "path": "train_gnn_v2.py",
+    "lines": 711,
+    "sha256": "faefa7a6232b109ab615da5ad4c71f4deed43a4e3ae70c989c93a0fb951989bc",
+    "purpose": "Acurion directed GraphSAGE v2 \u2014 chronological IBM AML training.",
+    "definitions": [
+      {
+        "name": "load_day",
+        "line": 88
+      },
+      {
+        "name": "account_keys",
+        "line": 112
+      },
+      {
+        "name": "transaction_features",
+        "line": 131
+      },
+      {
+        "name": "build_snapshot",
+        "line": 150
+      },
+      {
+        "name": "DirectedGraphSAGE",
+        "line": 260
+      },
+      {
+        "name": "predict",
+        "line": 348
+      },
+      {
+        "name": "calculate_metrics",
+        "line": 378
+      },
+      {
+        "name": "main",
+        "line": 412
+      }
+    ]
+  },
+  {
+    "path": "train_ml_models.py",
+    "lines": 812,
+    "sha256": "a599372311c578d79b3f3527e91f025326a028027b1b898d36c7a3985d3bbb66",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "heading",
+        "line": 79
+      },
+      {
+        "name": "quote",
+        "line": 85
+      },
+      {
+        "name": "connect_database",
+        "line": 89
+      },
+      {
+        "name": "prepare_data",
+        "line": 96
+      },
+      {
+        "name": "FeatureProcessor",
+        "line": 278
+      },
+      {
+        "name": "load_training_data",
+        "line": 322
+      },
+      {
+        "name": "train_models",
+        "line": 366
+      },
+      {
+        "name": "predict_scores",
+        "line": 447
+      },
+      {
+        "name": "score_period",
+        "line": 455
+      },
+      {
+        "name": "choose_threshold",
+        "line": 541
+      },
+      {
+        "name": "evaluate",
+        "line": 566
+      },
+      {
+        "name": "main",
+        "line": 620
+      }
+    ]
+  },
+  {
+    "path": "train_network_gnn_v3.py",
+    "lines": 652,
+    "sha256": "2ccc2ccd93f773ecc19d72cdf3f115e659d4ae4a0d01177e68ca81b278342a56",
+    "purpose": "Acurion V3 - Mixed-payment Network GNN.\n\nTarget: predict whether a seed's earlier connected network contains\nat least one ADDITIONAL laundering-labelled transaction.\n\nDoes not modify existing XGBoost or GNN V2 checkpoints.",
+    "definitions": [
+      {
+        "name": "load_graphs",
+        "line": 46
+      },
+      {
+        "name": "collate",
+        "line": 141
+      },
+      {
+        "name": "MixedPaymentGNN",
+        "line": 185
+      },
+      {
+        "name": "predict",
+        "line": 285
+      },
+      {
+        "name": "choose_threshold",
+        "line": 320
+      },
+      {
+        "name": "evaluate",
+        "line": 358
+      },
+      {
+        "name": "main",
+        "line": 395
+      }
+    ]
+  },
+  {
+    "path": "validate_ml_data.py",
+    "lines": 736,
+    "sha256": "c13dafa2a39a560a3f4045916c82944ff5a62ae8957c3d01060b951283d73c7c",
+    "purpose": "",
+    "definitions": [
+      {
+        "name": "section",
+        "line": 70
+      },
+      {
+        "name": "fail",
+        "line": 76
+      },
+      {
+        "name": "warn",
+        "line": 81
+      },
+      {
+        "name": "passed",
+        "line": 86
+      },
+      {
+        "name": "quote_identifier",
+        "line": 90
+      },
+      {
+        "name": "main",
+        "line": 94
+      },
+      {
+        "name": "verify_original_volumes",
+        "line": 598
+      }
+    ]
+  }
+]

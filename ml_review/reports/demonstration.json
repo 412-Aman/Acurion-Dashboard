@@ -1,0 +1,47 @@
+{
+  "schema": "acurion-offline-inference-v1",
+  "datasetId": "IBM-HI-Small",
+  "sourceRowConvention": "one-based",
+  "sourceTimezone": "UTC",
+  "timezoneNote": "Caller-supplied interpretation for display; model used original wall-clock hours",
+  "day": "2022-09-09",
+  "evaluatedAt": "2026-10-21T08:53:32.427633+00:00",
+  "policyVersion": "structural-top-daily-v1-lookback9-hops4-edges48-neighbors14-cap3",
+  "input": "ml_review/source/ml_data/HI-Small_features.parquet",
+  "inputSha256": "6f9d4b5f1ced373b09869c09afb1b049e240ea72ff6e4de3302b234764b07d28",
+  "xgbSha256": "6068f11fd19f976a032a8b8ac432d83d207496ed753bf383c4f7824b5ed6553e",
+  "gnnSha256": "627b5ce8a98dbee3e016b3fe274651fcaf2e5e3e03a06e68d494f1540b20481b",
+  "encoderSha256": "7478b3a736d89763f4d32451ac9a19f6b9c98b1fe390a40c90a46c5a7e5e06a7",
+  "rankReferenceSha256": "2d8de418f49855ba66ad154e87297c8c8c81896f48e13873972fb8ab370fae81",
+  "quality": {
+    "rows": 654467,
+    "nonfinite_numeric_cells": 0,
+    "negative_recent_volume_cells": 0,
+    "unknown_categories": {
+      "payment_currency": 0,
+      "receiving_currency": 0,
+      "payment_format": 0
+    }
+  },
+  "coverage": {
+    "targetTransactions": 654467,
+    "historyRowsIndexed": 4868912,
+    "transactionAlerts": 297,
+    "structuralSeeds": 400,
+    "unionSeeds": 696,
+    "networksScored": 696,
+    "networksSkipped": 0,
+    "networkReviewAlerts": 294,
+    "networkAlertsOutsideXgbSeeds": 62,
+    "exportedTransactions": 23779,
+    "discoveryTiming": "Daily batch after target-day end; not a real-time discovery claim",
+    "exportScope": "Alert/context records plus first 100 target-day rows; all target-day scores saved separately",
+    "candidateBudget": 400
+  },
+  "limitations": [
+    "Experimental models; scores are not calibrated laundering probabilities",
+    "Previously examined benchmark day is not a new holdout",
+    "Candidate budget limits discovery; unselected networks are unassessed",
+    "Historical graph connectivity is not proof of a time-ordered money trail"
+  ]
+}

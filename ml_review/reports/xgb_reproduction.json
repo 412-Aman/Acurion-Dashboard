@@ -1,0 +1,35 @@
+{
+  "date": "2022-09-09",
+  "quality": {
+    "rows": 654467,
+    "nonfinite_numeric_cells": 0,
+    "negative_recent_volume_cells": 0,
+    "unknown_categories": {
+      "payment_currency": 0,
+      "receiving_currency": 0,
+      "payment_format": 0
+    }
+  },
+  "archived_seed_score_max_abs_error": 1.1427825929999358e-07,
+  "seed_threshold": 0.9993702901222549,
+  "selected_ids_equal": true,
+  "missing_seed_ids": 0,
+  "additional_seed_ids": 0,
+  "metrics": {
+    "rows": 654467,
+    "positives": 514,
+    "alerts": 297,
+    "tp": 222,
+    "fp": 75,
+    "fn": 292,
+    "tn": 653878,
+    "precision": 0.7474747474747475,
+    "recall": 0.43190661478599224,
+    "false_positive_rate": 0.0001146871411248209,
+    "alerts_per_100k": 45.38043934988319,
+    "false_alerts_per_true_alert": 0.33783783783783783,
+    "average_precision": 0.5277960749395739,
+    "threshold": 0.9993702901222549
+  },
+  "raw_score_average_precision": 0.5280505263663907
+}

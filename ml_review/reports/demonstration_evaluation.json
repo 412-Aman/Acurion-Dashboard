@@ -1,0 +1,51 @@
+{
+  "status": "Retrospective diagnostic, not untouched final evaluation",
+  "transactions": {
+    "rows": 654467,
+    "positives": 514,
+    "alerts": 297,
+    "tp": 222,
+    "fp": 75,
+    "fn": 292,
+    "tn": 653878,
+    "precision": 0.7474747474747475,
+    "recall": 0.43190661478599224,
+    "false_positive_rate": 0.0001146871411248209,
+    "alerts_per_100k": 45.38043934988319,
+    "false_alerts_per_true_alert": 0.33783783783783783,
+    "average_precision": 0.5277960749395739,
+    "threshold": 0.9993702901222549
+  },
+  "networks_union": {
+    "rows": 696,
+    "positives": 256,
+    "alerts": 294,
+    "tp": 208,
+    "fp": 86,
+    "fn": 48,
+    "tn": 354,
+    "precision": 0.7074829931972789,
+    "recall": 0.8125,
+    "false_positive_rate": 0.19545454545454546,
+    "alerts_per_100k": 42241.379310344826,
+    "false_alerts_per_true_alert": 0.41346153846153844,
+    "average_precision": 0.855069754248114,
+    "threshold": 0.38466477394104004
+  },
+  "networks_outside_xgb": {
+    "rows": 399,
+    "positives": 23,
+    "alerts": 62,
+    "tp": 12,
+    "fp": 50,
+    "fn": 11,
+    "tn": 326,
+    "precision": 0.1935483870967742,
+    "recall": 0.5217391304347826,
+    "false_positive_rate": 0.13297872340425532,
+    "alerts_per_100k": 15538.847117794487,
+    "false_alerts_per_true_alert": 4.166666666666667,
+    "average_precision": 0.2234037151558972,
+    "threshold": 0.38466477394104004
+  }
+}

@@ -1,0 +1,10 @@
+# Reproduction environment: Python 3.12.14; CPU inference only.
+numpy==2.5.4
+pandas==2.3.3
+pyarrow==26.0.0
+duckdb==1.5.6
+xgboost==3.4.1
+torch==2.14.1
+scikit-learn==1.9.1
+pytest==9.1.1
+networkx==3.7

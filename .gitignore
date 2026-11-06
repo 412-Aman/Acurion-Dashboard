@@ -28,3 +28,12 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Local ML audit inputs and generated data stay off Git
+/ml_review/source/
+/ml_review/.venv*/
+/ml_review/results/
+/ml_review/data/
+
+# Local Claude Code settings
+/.claude/

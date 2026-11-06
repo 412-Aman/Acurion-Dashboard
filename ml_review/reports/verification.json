@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-21",
+  "new_tests": {
+    "passed": 14,
+    "failed": 0,
+    "command": "ml_review/.venv312/bin/python -m pytest -q -c ml_review/pytest.ini ml_review/tests"
+  },
+  "original_tests": {
+    "passed": 24,
+    "failed": 2,
+    "working_directory": "ml_review/source",
+    "note": "Preserved original assertions: old missing-field message and numeric amount strings"
+  },
+  "dashboard_contracts": {
+    "transactions": 23779,
+    "alerts": 297,
+    "networks": 696,
+    "result": "passed against existing JS normalizers and edge contracts"
+  },
+  "preview": "Browser screenshot inspected; independent-network filter verified",
+  "fresh_synthetic_input": {
+    "targetTransactions": 240,
+    "historyRowsIndexed": 240,
+    "transactionAlerts": 0,
+    "structuralSeeds": 20,
+    "unionSeeds": 20,
+    "networksScored": 20,
+    "networksSkipped": 0,
+    "networkReviewAlerts": 0,
+    "networkAlertsOutsideXgbSeeds": 0,
+    "exportedTransactions": 206,
+    "discoveryTiming": "Daily batch after target-day end; not a real-time discovery claim",
+    "exportScope": "Alert/context records plus first 100 target-day rows; all target-day scores saved separately",
+    "candidateBudget": 20
+  },
+  "scope": "Saved-model offline inference and audit. No training, Firebase writes or deployment."
+}
