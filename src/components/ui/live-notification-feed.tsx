@@ -231,7 +231,7 @@ function MessageDetail({ item, play, delay, reduced }: StoryProps & { item: Mess
   const words = item.text.split(/\s+/).filter(Boolean);
   return (
     <div data-detail="message" className="flex items-end gap-2">
-      <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full text-[10px] font-semibold" style={{ background: TINT }}>
+      <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-full text-[12px] font-semibold" style={{ background: TINT }}>
         {initialsOf(item.from)}
       </span>
       <div className="min-w-0 rounded-2xl rounded-bl-md bg-muted px-3 py-2 text-[13px] leading-snug text-foreground">
@@ -333,7 +333,7 @@ function DeliveryDetail({ item, play, delay, reduced }: StoryProps & { item: Del
         {item.steps.map((label, i) => (
           <span
             key={`${label}-${i}`}
-            className={cx("absolute top-0 whitespace-nowrap text-[10px] leading-none", i === step ? "font-medium text-foreground" : "text-muted-foreground")}
+            className={cx("absolute top-0 whitespace-nowrap text-[12px] leading-none", i === step ? "font-medium text-foreground" : "text-muted-foreground")}
             style={{ left: `${at(i)}%`, transform: `translateX(${i === 0 ? "0" : i === n - 1 ? "-100%" : "-50%"})` }}
           >
             {label}
@@ -421,7 +421,7 @@ function RideDetail({ item, play, delay, reduced }: StoryProps & { item: RideNot
           </g>
         </svg>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
         <span data-eta-chip className="rounded-full px-2 py-0.5 font-semibold tabular-nums" style={{ background: TINT }}>
           <span className="text-foreground">{eta} min</span>
         </span>
@@ -506,11 +506,11 @@ function DateSheet({ day, locale }: { day: Date; locale: string }) {
   return (
     <div className="absolute inset-0 overflow-hidden rounded-lg border border-border bg-card shadow-sm" style={{ transformOrigin: "50% 0%", backfaceVisibility: "hidden" }}>
       <div style={{ background: "currentColor" }}>
-        <span className="block text-center text-[9px] font-semibold uppercase leading-[15px] tracking-wide text-white">{day.toLocaleDateString(locale, { month: "short" })}</span>
+        <span className="block text-center text-[10px] font-semibold uppercase leading-[15px] tracking-wide text-white">{day.toLocaleDateString(locale, { month: "short" })}</span>
       </div>
       <div className="flex flex-col items-center pt-1">
         <span className="text-lg font-semibold leading-none text-foreground tabular-nums">{day.getDate()}</span>
-        <span className="mt-0.5 text-[9px] uppercase leading-none text-muted-foreground">{day.toLocaleDateString(locale, { weekday: "short" })}</span>
+        <span className="mt-0.5 text-[10px] uppercase leading-none text-muted-foreground">{day.toLocaleDateString(locale, { weekday: "short" })}</span>
       </div>
     </div>
   );
@@ -569,12 +569,12 @@ function CalendarDetail({ item, play, delay, reduced }: StoryProps & { item: Cal
         <div className="flex items-center">
           <div ref={peopleRef} className="flex -space-x-1.5">
             {people.slice(0, 3).map((name) => (
-              <span key={name} className="grid size-6 place-items-center rounded-full border-2 border-card bg-muted text-[9px] font-semibold text-foreground">
+              <span key={name} className="grid size-6 place-items-center rounded-full border-2 border-card bg-muted text-[11px] font-semibold text-foreground">
                 {initialsOf(name)}
               </span>
             ))}
           </div>
-          {people.length > 3 && <span className="ml-1.5 text-[11px] text-muted-foreground">+{people.length - 3}</span>}
+          {people.length > 3 && <span className="ml-1.5 text-[12px] text-muted-foreground">+{people.length - 3}</span>}
         </div>
       )}
     </div>
@@ -681,7 +681,7 @@ function CodeDetail({ item, play, delay, reduced }: StoryProps & { item: CodeNot
           <span className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
             <span data-expiry className="block h-full rounded-full" style={{ width: `${(left / total) * 100}%`, background: "currentColor", transition: reduced ? "none" : "width 1s linear" }} />
           </span>
-          <span className="text-[11px] tabular-nums text-muted-foreground">{expired ? "Expired" : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`}</span>
+          <span className="text-[12px] tabular-nums text-muted-foreground">{expired ? "Expired" : `${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`}</span>
         </div>
       )}
     </div>
@@ -742,7 +742,7 @@ function FlightDetail({ item, play, delay, reduced }: StoryProps & { item: Fligh
         <span>{item.to}</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Gate</span>
+        <span className="text-[12px] font-medium uppercase tracking-wider text-muted-foreground">Gate</span>
         <span ref={flapsRef} data-gate={item.gate} className="flex gap-0.5 [perspective:200px]">
           {Array.from(target).map((ch, i) => (
             <span key={i} className="relative grid h-7 w-5 place-items-center overflow-hidden rounded-[4px] bg-foreground font-mono text-sm font-bold text-background">
@@ -753,7 +753,7 @@ function FlightDetail({ item, play, delay, reduced }: StoryProps & { item: Fligh
             </span>
           ))}
         </span>
-        {item.previousGate && <span className="text-[11px] text-muted-foreground line-through">{item.previousGate}</span>}
+        {item.previousGate && <span className="text-[12px] text-muted-foreground line-through">{item.previousGate}</span>}
       </div>
     </div>
   );
@@ -1257,7 +1257,7 @@ export function LiveNotificationFeed({
         <span
           data-count
           aria-label={`${unread} unread`}
-          className={cx("min-w-5 rounded-full bg-foreground px-1.5 text-center text-[11px] font-semibold leading-5 text-background tabular-nums transition-opacity", unread === 0 && "opacity-0")}
+          className={cx("min-w-5 rounded-full bg-foreground px-1.5 text-center text-[12px] font-semibold leading-5 text-background tabular-nums transition-opacity", unread === 0 && "opacity-0")}
         >
           {unread}
         </span>

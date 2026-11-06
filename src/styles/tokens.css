@@ -1,0 +1,81 @@
+/* Acurion design tokens: deep navy surfaces, teal primary, violet secondary, semantic severity colors. */
+@theme {
+  --color-bg: #0b1020;
+  --color-surface: #111a2e;
+  --color-surface-2: #16213a;
+  --color-surface-3: #1c2947;
+  --color-border: #22304d;
+  --color-border-light: #2e3f63;
+  --color-text: #e6eaf2;
+  --color-text-dim: #a3aec4;
+  --color-text-faint: #8b97b0;
+  --color-accent: #2dd4bf;
+  --color-accent-dim: #5eead4;
+  --color-accent-muted: #0f3a3d;
+  --color-violet: #a78bfa;
+  --color-info: #60a5fa;
+  --color-ok: #34d399;
+  --color-warn: #facc15;
+  --color-danger: #fb923c;
+  --color-crit: #f87171;
+  --font-display: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  --radius-card: 14px;
+  --radius-sm: 10px;
+  --text-xs: .8125rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: .9375rem;
+  --text-sm--line-height: 1.55;
+  --ease-out-quint: cubic-bezier(.23,1,.32,1);
+}
+
+/* shadcn-compatible names used by the React components. */
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-muted: var(--color-surface-2);
+  --color-muted-foreground: var(--color-text-dim);
+  --color-primary: var(--color-accent);
+  --color-ring: var(--color-accent);
+  --color-chart-1: var(--color-accent);
+  --color-chart-2: var(--color-violet);
+  --color-chart-3: var(--color-info);
+}
+
+:root {
+  --color-hover: #19253f;
+  --color-popover: #141e35;
+  --on-accent: #042f2b;
+
+  /* Soft tints for badges, callouts and icon chips. */
+  --tint-accent: rgb(45 212 191 / .12);
+  --tint-violet: rgb(167 139 250 / .13);
+  --tint-info: rgb(96 165 250 / .13);
+  --tint-ok: rgb(52 211 153 / .12);
+  --tint-warn: rgb(250 204 21 / .12);
+  --tint-danger: rgb(251 146 60 / .13);
+  --tint-crit: rgb(248 113 113 / .14);
+  --edge-accent: rgb(45 212 191 / .32);
+  --edge-violet: rgb(167 139 250 / .32);
+  --edge-info: rgb(96 165 250 / .32);
+  --edge-ok: rgb(52 211 153 / .3);
+  --edge-warn: rgb(250 204 21 / .3);
+  --edge-danger: rgb(251 146 60 / .32);
+  --edge-crit: rgb(248 113 113 / .34);
+
+  --shadow-card: 0 1px 0 rgb(255 255 255 / .03) inset, 0 1px 2px rgb(2 6 23 / .4), 0 8px 24px -12px rgb(2 6 23 / .6);
+  --shadow-menu: 0 0 0 1px rgb(148 163 209 / .14), 0 6px 12px rgb(2 6 23 / .4), 0 18px 40px rgb(2 6 23 / .55);
+  --shadow-panel: 0 0 0 1px rgb(148 163 209 / .12), 0 24px 64px rgb(2 6 23 / .65);
+
+  --space-page: clamp(20px, 3vw, 40px);
+  --content-max: 1280px;
+  --header-h: 68px;
+  --dock-clearance: 128px;
+
+  --motion-ease: cubic-bezier(.23,1,.32,1);
+  --motion-drawer: cubic-bezier(.32,.72,0,1);
+  --motion-control: 180ms;
+  --motion-page: 280ms;
+}

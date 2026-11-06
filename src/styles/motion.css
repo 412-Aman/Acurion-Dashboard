@@ -1,0 +1,13 @@
+/* One restrained motion system. Hover effects only on devices that truly hover; everything calms down under reduced motion. */
+@media (hover:hover) and (pointer:fine) {
+  #app .workflow-card:hover { transform:translateY(-2px); }
+  #app .destination-card:hover { transform:translateY(-1px); }
+}
+.detail-dialog[open], .panel-dialog[open] { animation-duration:240ms; }
+.account-menu:not([hidden]), .record-menu:not([hidden]) { animation:overlay-in 160ms var(--motion-ease); transform-origin:top right; }
+#app :is(button,[role="button"],a) { -webkit-tap-highlight-color:transparent; }
+@media (max-width:767px) { .input, .command-input input { font-size:16px; } }
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { animation-duration:1ms !important; animation-iteration-count:1 !important; transition-duration:1ms !important; scroll-behavior:auto !important; }
+  #app .workflow-card:hover, #app .destination-card:hover { transform:none; }
+}

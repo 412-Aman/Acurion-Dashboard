@@ -1,6 +1,6 @@
 # Acurion - AML intelligence prototype
 
-Vite + vanilla JS + Tailwind + Firebase + Cytoscape. A monochrome AML investigation prototype with transaction views, case evidence and a browser compliance sandbox.
+Vite + vanilla JS + Tailwind + Firebase + Cytoscape. A dark navy AML investigation prototype with transaction views, case evidence and a browser compliance sandbox.
 
 ## Run
 
@@ -53,6 +53,17 @@ python3 scripts/convert-un-list.py /absolute/path/consolidated.xml /absolute/pat
 
 Automatic feed updates, live news ingestion, secure server storage and goAML submission still need server/institution integrations described in the review.
 
+## Design system
+
+Styles live in `src/styles/`, imported through `main.css`:
+
+- `tokens.css`: navy surfaces, teal primary, violet and blue accents, and severity colours (critical red, high orange, medium yellow, low green). All text colours meet WCAG AA on every surface.
+- `base.css`, `components.css`: type scale (15px body), buttons, fields, badges, tables, tabs, callouts, stat tiles and the side drawer used for record details.
+- `shell.css`: sticky header with search, connection status and the floating dock.
+- `pages.css`, `auth.css`, `motion.css`: page layouts, sign-in pages and reduced-motion handling.
+
+![Redesigned overview](docs/navy-redesign-preview.jpg)
+
 ## Integrated React components
 
 The app now also supports React 19 / TypeScript islands and a shadcn-compatible component folder. A floating dock links the main destinations directly; All tools opens a reorderable workspace map with every destination, workflow context and keyboard access. This replaces the permanent sidebar and duplicate shortcut rail. Header notifications use Live Notification Feed; the login and overview use Gateway Flow; **Reports & audit → Working drafts** includes HoldButton and Shredder with recoverable disposal.
@@ -75,7 +86,7 @@ Model training, calibration, evaluation and SHAP/GNN explanation generation rema
 
 ## Authentication and motion
 
-The auth pages share the dashboard's monochrome layout. Email sign-in, registration, recovery and email verification use the configured Firebase project by default. Google and GitHub buttons use Firebase Authentication directly. Enable those providers in Firebase; legacy frontend provider flags no longer block sign-in. [Authentication and motion setup](docs/AUTH_AND_MOTION.md) lists the required settings, provider prerequisites and validation limits.
+The auth pages share the dashboard's navy theme. Email sign-in, registration, recovery and email verification use the configured Firebase project by default. Google and GitHub buttons use Firebase Authentication directly. Enable those providers in Firebase; legacy frontend provider flags no longer block sign-in. [Authentication and motion setup](docs/AUTH_AND_MOTION.md) lists the required settings, provider prerequisites and validation limits.
 
 Buttons have eased hover, press and focus states. Page changes fade smoothly, local views remain responsive during animation, and the workspace map uses smooth pointer and keyboard reordering. Rapid clicks select the latest destination. Reduced-motion preferences are respected.
 

@@ -233,14 +233,14 @@ export function ChangelogTimeline({
           <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-xl border border-border bg-background"><GitBranch className="size-4 text-muted-foreground" /></span>
           <div>
             <h2 id={titleId} className="text-lg font-semibold tracking-tight">{title}</h2>
-            {oldest && <p className="text-[10px] text-muted-foreground">{sorted.length} {sorted.length === 1 ? "update" : "updates"} since {oldest.date}</p>}
+            {oldest && <p className="text-[12px] text-muted-foreground">{sorted.length} {sorted.length === 1 ? "update" : "updates"} since {oldest.date}</p>}
           </div>
         </div>
-        {onClose ? <button type="button" onClick={onClose} aria-label="Close" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><X className="size-4" /></button> : <span className="mt-1 text-[9px] text-muted-foreground">Select to read · select again to close</span>}
+        {onClose ? <button type="button" onClick={onClose} aria-label="Close" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><X className="size-4" /></button> : <span className="mt-1 text-[11px] text-muted-foreground">Select to read · select again to close</span>}
       </div>
 
       {status && <div className="shrink-0 px-4 pb-1.5">
-        <div data-live-status className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border bg-muted/40 px-3 py-2 font-mono text-[10px] text-muted-foreground">
+        <div data-live-status className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border bg-muted/40 px-3 py-2 font-mono text-[12px] text-muted-foreground">
           <span data-live-pulse aria-hidden="true" className="size-1.5 rounded-full bg-chart-2" />
           <span className="font-medium text-foreground">live</span>
           {status.commit && <><span aria-hidden="true">/</span><span className="text-foreground/80">{status.ref ? `${status.ref}@` : ""}{status.commit}</span></>}
@@ -273,7 +273,7 @@ export function ChangelogTimeline({
               const bodyId = `${idPrefix}-body-${index}`;
               const triggerId = `${idPrefix}-trigger-${index}`;
               return <React.Fragment key={entry.id}>
-                {showMonth && <li data-month className="flex h-5 items-center pl-9 font-mono text-[9px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</li>}
+                {showMonth && <li data-month className="flex h-5 items-center pl-9 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{monthLabel}</li>}
                 <li data-entry data-entry-id={entry.id} data-category={entry.category} data-open={open} className={cx("relative rounded-lg transition-colors duration-200 motion-reduce:transition-none", open && "bg-muted/65")}>
                   <button type="button" id={triggerId} data-entry-trigger={entry.id} aria-expanded={open} aria-pressed={isPinned} aria-controls={bodyId} data-tooltip={entry.title} onFocus={() => {
                     window.clearTimeout(leaveTimer.current);
@@ -291,8 +291,8 @@ export function ChangelogTimeline({
                       {open && <span key={entry.id} data-node-ripple className="absolute size-3 rounded-full border border-current opacity-0" />}
                       <span data-node-core data-idle-pulse={index === 0 && !activeId ? "true" : undefined} className="relative size-2 rounded-full bg-current ring-[3px] ring-card" style={{ transform: open ? "scale(1.4)" : "scale(1)", opacity: open ? 1 : 0.45 }} />
                     </span>
-                    <time dateTime={entry.date} className="font-mono text-[10px] tabular-nums text-muted-foreground">{entry.date.slice(5).replace("-", ".")}</time>
-                    <span className={cx("justify-self-start whitespace-nowrap rounded border px-1 py-px font-mono text-[9px] font-medium lowercase", open ? category.chip : "border-border bg-muted/40 text-muted-foreground")}>{category.mark} {category.label}</span>
+                    <time dateTime={entry.date} className="font-mono text-[12px] tabular-nums text-muted-foreground">{entry.date.slice(5).replace("-", ".")}</time>
+                    <span className={cx("justify-self-start whitespace-nowrap rounded border px-1 py-px font-mono text-[11px] font-medium lowercase", open ? category.chip : "border-border bg-muted/40 text-muted-foreground")}>{category.mark} {category.label}</span>
                     <span className={cx("truncate text-[12px] leading-5", open ? "font-semibold text-foreground" : "font-medium text-foreground/85")}>{entry.title}</span>
                     {isPinned ? <Pin data-pin-mark aria-label="Pinned" className="size-3 text-foreground" /> : <ChevronDown aria-hidden="true" className={cx("size-3 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none", open && "rotate-180")} />}
                   </button>
@@ -300,7 +300,7 @@ export function ChangelogTimeline({
                     <div className="min-h-0 overflow-hidden">
                       <div data-entry-copy className="pb-3 pl-9 pr-5 pt-0.5">
                         {entry.summary && <p className="text-xs leading-[18px] text-muted-foreground">{entry.summary}</p>}
-                        {entry.href && <a href={entry.href} target="_blank" rel="noreferrer" className="mt-1 inline-block rounded-sm text-[11px] font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{"Read update"}<span className="sr-only">: {entry.title}</span></a>}
+                        {entry.href && <a href={entry.href} target="_blank" rel="noreferrer" className="mt-1 inline-block rounded-sm text-[12px] font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{"Read update"}<span className="sr-only">: {entry.title}</span></a>}
                         {!entry.summary && !entry.href && <p className="text-xs leading-[18px] text-muted-foreground">{entry.title}</p>}
                       </div>
                     </div>
@@ -314,8 +314,8 @@ export function ChangelogTimeline({
       </div>
 
       {historyHref && <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-2">
-        <a href={historyHref} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded text-[11px] text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><GitCommitVertical aria-hidden="true" className="size-3.5" />{historyLabel}</a>
-        <span className="text-[9px] text-muted-foreground">{pinnedId ? "Pinned · click again to release" : "Explore at your own pace"}</span>
+        <a href={historyHref} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 rounded text-[12px] text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><GitCommitVertical aria-hidden="true" className="size-3.5" />{historyLabel}</a>
+        <span className="text-[11px] text-muted-foreground">{pinnedId ? "Pinned · click again to release" : "Explore at your own pace"}</span>
       </div>}
       <p role="status" aria-live="polite" className="sr-only">{pinnedId ? `Pinned: ${activeEntry?.title}` : "No update pinned."}</p>
     </div>

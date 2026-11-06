@@ -32,7 +32,7 @@ export function installTooltips() {
     },immediate?0:400);
   }
   const leave=()=>{closing=setTimeout(()=>{if(document.activeElement!==trigger&&!tip.matches(':hover'))hide();},140);};
-  document.addEventListener('pointerover',event=>{if(tip.contains(event.target)){clearTimeout(closing);return;}const node=target(event.target);if(node){clearTimeout(closing);show(node);}});
+  document.addEventListener('pointerover',event=>{if(event.pointerType&&event.pointerType!=='mouse')return;if(tip.contains(event.target)){clearTimeout(closing);return;}const node=target(event.target);if(node){clearTimeout(closing);show(node);}});
   document.addEventListener('pointerout',event=>{const node=target(event.target);if(node&&!node.contains(event.relatedTarget)){dismissed=undefined;leave();}});
   tip.addEventListener('pointerleave',leave);
   document.addEventListener('focusin',event=>{dismissed=undefined;const node=target(event.target);if(node?.matches(':focus-visible'))show(node,true);else hide();});

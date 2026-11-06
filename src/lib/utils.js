@@ -37,7 +37,8 @@ export function severityBadgeClass(severity) {
     case 'critical': return 'badge badge-critical';
     case 'high':     return 'badge badge-high';
     case 'medium':   return 'badge badge-medium';
-    default:         return 'badge badge-low';
+    case 'low':      return 'badge badge-low';
+    default:         return 'badge badge-neutral';
   }
 }
 
@@ -46,7 +47,7 @@ export function decisionBadgeClass(decision) {
     case 'block': return 'badge badge-block';
     case 'flag': return 'badge badge-flag';
     case 'pass': return 'badge badge-pass';
-    default: return 'badge badge-low';
+    default: return 'badge badge-neutral';
   }
 }
 export function formatRisk(score) { return score == null || !Number.isFinite(score) ? 'Not supplied' : `${Math.round(score * 100)}/100`; }
