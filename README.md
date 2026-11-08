@@ -1,6 +1,6 @@
 # Acurion - AML intelligence prototype
 
-Vite + vanilla JS + Tailwind + Firebase + Cytoscape. A dark navy AML investigation prototype with transaction views, case evidence and a browser compliance sandbox.
+Vite + vanilla JS + Tailwind + Firebase + Cytoscape. A monochrome AML investigation prototype with a signal-orange accent: transaction views, case evidence and a browser compliance sandbox.
 
 ## Run
 
@@ -57,12 +57,14 @@ Automatic feed updates, live news ingestion, secure server storage and goAML sub
 
 Styles live in `src/styles/`, imported through `main.css`:
 
-- `tokens.css`: navy surfaces, teal primary, violet and blue accents, and severity colours (critical red, high orange, medium yellow, low green). All text colours meet WCAG AA on every surface.
-- `base.css`, `components.css`: type scale (15px body), buttons, fields, badges, tables, tabs, callouts, stat tiles and the side drawer used for record details.
-- `shell.css`: sticky header with search, connection status and the floating dock.
+- `tokens.css`: the neutral near-black palette plus one signal-orange accent (`#ff6b35`). Orange marks focus, selection and your current place; red, amber and green are kept for risk and outcomes.
+- `base.css`, `components.css`: type, buttons, fields, badges, tables, tabs, callouts, stat tiles and the side drawer used for record details.
+- `shell.css`: sticky header, page meta row and the floating dock.
 - `pages.css`, `auth.css`, `motion.css`: page layouts, sign-in pages and reduced-motion handling.
 
-![Redesigned overview](docs/navy-redesign-preview.jpg)
+Rows and cards marked `data-row-link` open their record from anywhere on the surface (`src/components/rowLinks.js`); the control marked `data-row-primary` stays the keyboard target. Every drawer closes from its backdrop or Escape.
+
+![Overview](docs/workspace-preview.jpg)
 
 ## Integrated React components
 
@@ -86,7 +88,7 @@ Model training, calibration, evaluation and SHAP/GNN explanation generation rema
 
 ## Authentication and motion
 
-The auth pages share the dashboard's navy theme. Email sign-in, registration, recovery and email verification use the configured Firebase project by default. Google and GitHub buttons use Firebase Authentication directly. Enable those providers in Firebase; legacy frontend provider flags no longer block sign-in. [Authentication and motion setup](docs/AUTH_AND_MOTION.md) lists the required settings, provider prerequisites and validation limits.
+The auth pages share the dashboard's monochrome theme. Email sign-in, registration, recovery and email verification use the configured Firebase project by default. Google and GitHub buttons use Firebase Authentication directly. Enable those providers in Firebase; legacy frontend provider flags no longer block sign-in. [Authentication and motion setup](docs/AUTH_AND_MOTION.md) lists the required settings, provider prerequisites and validation limits.
 
 Buttons have eased hover, press and focus states. Page changes fade smoothly, local views remain responsive during animation, and the workspace map uses smooth pointer and keyboard reordering. Rapid clicks select the latest destination. Reduced-motion preferences are respected.
 

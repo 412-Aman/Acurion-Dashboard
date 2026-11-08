@@ -14,7 +14,7 @@ main.innerHTML=`<section class="card filter-card"><form id="network-filter"><div
 let graph={nodes:[],edges:[]},alerts=[],cy,visibleEdges=[],evidence=null;
 const params=new URLSearchParams(location.search);document.getElementById('focus-account').value=params.get('account')||'';
 function filters(){return {type:document.getElementById('edge-type').value,currency:document.getElementById('currency').value,minimumAmount:document.getElementById('minimum').value===''?null:Number(document.getElementById('minimum').value),start:document.getElementById('start-date').value?`${document.getElementById('start-date').value}T00:00:00Z`:null,end:document.getElementById('end-date').value?`${document.getElementById('end-date').value}T23:59:59.999Z`:null};}
-function evidenceRows(edges){return edges.map(e=>`<div class="evidence-item"><strong>${esc(e.source)} → ${esc(e.target)}</strong><small>${esc(e.transactionId||e.id)} · ${e.type==='transaction'||e.type==='suspicious'?formatCurrency(e.amount,e.currency):esc(e.type)}</small><small>${formatDateTime(e.timestamp)} · ${esc(e.provenance||e.sourceDataset||'Source not supplied')}</small>${e.transactionId?`<a class="text-button" href="transactions.html?transaction=${encodeURIComponent(e.transactionId)}">View source transaction</a>`:''}</div>`).join('');}
+function evidenceRows(edges){return edges.map(e=>`<div class="evidence-item"${e.transactionId?' data-row-link':''}><strong>${esc(e.source)} → ${esc(e.target)}</strong><small>${esc(e.transactionId||e.id)} · ${e.type==='transaction'||e.type==='suspicious'?formatCurrency(e.amount,e.currency):esc(e.type)}</small><small>${formatDateTime(e.timestamp)} · ${esc(e.provenance||e.sourceDataset||'Source not supplied')}</small>${e.transactionId?`<a class="text-button" data-row-primary href="transactions.html?transaction=${encodeURIComponent(e.transactionId)}">View source transaction</a>`:''}</div>`).join('');}
 function inspectAccount(id){
   const neighborhood=boundedNeighborhood(graph.nodes,visibleEdges,id,Number(document.getElementById('hops').value));
   if(!neighborhood.nodes.length){document.getElementById('graph-summary').textContent='This account is unavailable in the loaded graph sample.';return;}
@@ -33,17 +33,17 @@ function draw(){
   if(!nodes.length){document.getElementById('cy').innerHTML='<div class="data-empty">No matching accounts in this sample. Reset the filters or check the data source.</div>';return;}
   document.getElementById('cy').innerHTML='';
   cy=cytoscape({container:document.getElementById('cy'),elements:[...nodes,...edges].map(data=>({data})),style:[
-    {selector:'node',style:{'background-color':'#1c2947','width':24,'height':24,'border-width':2,'border-color':'#2dd4bf','label':'data(label)','color':'#a3aec4','font-size':10,'min-zoomed-font-size':6,'font-family':'ui-sans-serif, system-ui, sans-serif','text-valign':'bottom','text-margin-y':7,'text-outline-color':'#0b1020','text-outline-width':2}},
-    {selector:'node:selected',style:{'background-color':'#2dd4bf','border-color':'#5eead4','border-width':3}},
-    {selector:'edge',style:{'width':1.6,'line-color':'#4f6795','curve-style':'bezier','target-arrow-shape':'triangle','target-arrow-color':'#4f6795','arrow-scale':.8}},
-    {selector:'edge[type ^= "shared_"]',style:{'line-style':'dashed','target-arrow-shape':'none','line-color':'#60a5fa','opacity':.7}},
-    {selector:'edge[?flagged]',style:{'line-color':'#f87171','target-arrow-color':'#f87171','width':2.6}},
+    {selector:'node',style:{'background-color':'#2c2c2c','width':24,'height':24,'border-width':1.5,'border-color':'#bdbdbd','label':'data(label)','color':'#a1a1a1','font-size':10,'min-zoomed-font-size':6,'font-family':'ui-sans-serif, system-ui, sans-serif','text-valign':'bottom','text-margin-y':7,'text-outline-color':'#151515','text-outline-width':2}},
+    {selector:'node:selected',style:{'background-color':'#ff6b35','border-color':'#ffb08f','border-width':2.5,'color':'#ffffff'}},
+    {selector:'edge',style:{'width':1.6,'line-color':'#5a5a5a','curve-style':'bezier','target-arrow-shape':'triangle','target-arrow-color':'#5a5a5a','arrow-scale':.8}},
+    {selector:'edge[type ^= "shared_"]',style:{'line-style':'dashed','target-arrow-shape':'none','line-color':'#7a7a7a','opacity':.8}},
+    {selector:'edge[?flagged]',style:{'line-color':'#f26b6b','target-arrow-color':'#f26b6b','width':2.6}},
     {selector:'.faded',style:{opacity:.08}},
-    {selector:'.path-evidence',style:{'line-color':'#a78bfa','target-arrow-color':'#a78bfa','width':4,'z-index':10}},
-  ],layout:{name:'cose',animate:false,randomize:false,padding:45,numIter:500},minZoom:.1,maxZoom:4});
-  if(cy.zoom()>1.4){cy.zoom(1.4);cy.center();}
+    {selector:'.path-evidence',style:{'line-color':'#ff6b35','target-arrow-color':'#ff6b35','width':4,'z-index':10}},
+  ],layout:nodes.length<=12?{name:'circle',fit:false,radius:Math.max(130,nodes.length*30),avoidOverlap:true,animate:false}:{name:'cose',animate:false,randomize:false,padding:50,numIter:800,idealEdgeLength:()=>120,nodeRepulsion:()=>12000,nodeOverlap:20},minZoom:.1,maxZoom:4});
+  if(nodes.length<=12){cy.zoom(1);cy.center();}else if(cy.zoom()>1.4){cy.zoom(1.4);cy.center();}
   cy.on('tap','node',event=>inspectAccount(event.target.id()));
-  if(focus)inspectAccount(focus);
+  if(focus){inspectAccount(focus);cy.getElementById(focus).select();}
 }
 async function init(){
   const state=document.getElementById('graph-load-state');renderLoading(state,'account network');
