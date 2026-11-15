@@ -59,13 +59,30 @@ export async function sendDeskCommand(action) {
 // Dataset uploads
 // ---------------------------------------------------------------------------------------------------------
 
+const list = value => Array.isArray(value) ? value : value && typeof value === 'object' ? Object.values(value) : [];
+
+// The host's column review (uploadJobs/{id}/host/columns) in a steady shape: Firebase hands lists back as
+// arrays or as objects with numeric keys.
+export function normalizeColumns(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    datasetType: String(raw.datasetType || 'generic'), rows: Number(raw.rows) || 0, rowsEstimated: !!raw.rowsEstimated,
+    columns: list(raw.columns).filter(c => c && c.name).map(c => ({ name: String(c.name), kind: String(c.kind || 'text'), distinct: Number(c.distinct) || 0, samples: list(c.samples).map(String), dateOrder: c.dateOrder ? String(c.dateOrder) : null })),
+    suggested: Object.fromEntries(Object.entries(raw.suggested || {}).filter(([, column]) => typeof column === 'string' && column)),
+    fixed: list(raw.fixed).map(String), missing: list(raw.missing).map(String),
+    alternatives: Object.fromEntries(Object.entries(raw.alternatives || {}).map(([field, names]) => [field, list(names).map(String)])),
+    warnings: list(raw.warnings).map(String), message: raw.message ? String(raw.message) : '', askedAt: Number(raw.askedAt) || null,
+  };
+}
+
 export function normalizeJob(id, job, myUid) {
   const host = job?.host || {};
   return {
     id, fileName: String(job?.fileName || 'Dataset'), bytes: Number(job?.bytes) || 0, byName: String(job?.byName || 'An investigator'),
     mine: !!myUid && job?.by === myUid, createdAt: Number(job?.createdAt) || null, status: String(job?.status || 'uploading'),
     progress: host.progress || null, summary: host.summary || null, error: host.error || null,
-    finishedAt: Number(host.finishedAt) || null,
+    finishedAt: Number(host.finishedAt) || null, columns: normalizeColumns(host.columns),
+    mapping: job?.mapping && typeof job.mapping === 'object' ? job.mapping : null,
   };
 }
 
@@ -133,7 +150,15 @@ export async function uploadDataset(file, { columns = [], onProgress = () => {},
 export async function cancelUpload(id) {
   if (preview) return (await preview).previewCancel(id);
   const snapshot = await withTimeout(get(ref(db, `${DATA_PATHS.uploadJobs}/${id}/status`)));
-  if (['uploading', 'queued'].includes(snapshot.val())) await withTimeout(update(ref(db, `${DATA_PATHS.uploadJobs}/${id}`), { status: 'cancelled' }));
+  if (['uploading', 'queued', 'columns'].includes(snapshot.val())) await withTimeout(update(ref(db, `${DATA_PATHS.uploadJobs}/${id}`), { status: 'cancelled' }));
+}
+
+// The uploader's answer to the column review: { field: column name, or '' for "not in this file" }. The job
+// goes back to the queue and the host scores the file with exactly these columns.
+export async function confirmColumns(id, mapping) {
+  if (preview) return (await preview).previewConfirm(id, mapping);
+  const clean = Object.fromEntries(Object.entries(mapping || {}).filter(([, column]) => typeof column === 'string').map(([field, column]) => [field, column.slice(0, 200)]));
+  await withTimeout(update(ref(db, `${DATA_PATHS.uploadJobs}/${id}`), Object.keys(clean).length ? { status: 'queued', mapping: clean } : { status: 'queued' }));
 }
 
 // Plain-language stage of an upload, for lists and the dialog.
@@ -142,6 +167,8 @@ export function describeUpload(job) {
   if (job.status === 'failed') return job.error?.message || 'The host could not analyse this file.';
   if (job.status === 'cancelled') return 'Cancelled';
   if (job.status === 'uploading') return 'Uploading';
-  if (job.status === 'queued') return 'Waiting for the Acurion host';
+  if (job.status === 'columns') return job.mine ? 'Confirm the columns to start the analysis' : `Waiting for ${job.byName} to confirm the columns`;
+  if (job.status === 'queued') return job.columns ? 'Columns confirmed, waiting for the Acurion host' : 'Waiting for the Acurion host';
+  if (job.status === 'received' && !job.columns) return 'The host is reading the columns';
   return job.progress?.note || 'Analysing on the Acurion host';
 }

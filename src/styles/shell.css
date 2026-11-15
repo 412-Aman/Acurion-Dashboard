@@ -296,6 +296,8 @@
 .island-notice-mark { position:relative; width:10px; height:10px; margin-top:5px; flex-shrink:0; border-radius:50%; background:var(--color-crit); box-shadow:0 0 14px rgb(242 107 107 / .8); }
 .island-notice[data-tone=ok] .island-notice-mark { background:var(--color-ok); box-shadow:0 0 14px rgb(60 207 142 / .6); }
 .island-notice[data-tone=warn] .island-notice-mark { background:var(--color-warn); box-shadow:0 0 14px rgb(233 165 72 / .6); }
+.island-notice[data-tone=ask] .island-notice-mark { background:var(--color-accent); box-shadow:0 0 14px rgb(255 107 53 / .6); }
+.island-glyph[data-ask], .island-upload[data-ask] strong { color:var(--color-accent); }
 .island-notice-text { min-width:0; flex:1; }
 .island-notice-text strong { display:block; font-size:13.5px; font-weight:600; }
 .island-notice-text small { display:block; margin-top:2px; font:500 11.5px var(--font-mono); color:#bdbdbd; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

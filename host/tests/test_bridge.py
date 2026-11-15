@@ -116,11 +116,34 @@ class FakeService(BaseHTTPRequestHandler):
             s.desk_calls.append(self.path)
             s.desk_status = {**s.desk_status, "state": "running" if self.path.endswith("start") else "paused"}
             return self._send(200, s.desk_status)
+        if self.path == "/api/columns":
+            s.columns_requests.append(body)
+            if s.columns_answer is None:
+                return self._send(404, {"detail": "Not Found"})
+            if b'name="mapping"' in body and b"Nowhere" in body:
+                return self._send(422, {"detail": "Mapping refers to unknown column 'Nowhere'"})
+            answer = dict(s.columns_answer)
+            if b'name="mapping"' in body:   # like the real API: the uploader's choices fill the missing fields
+                mapping = json.loads(body.decode().split('name="mapping"\r\n\r\n')[1].split("\r\n--")[0])
+                answer["missing_required"] = [f for f in answer["missing_required"] if not mapping.get(f)]
+            return self._send(200, answer)
         if self.path == "/api/v1/jobs":
             s.uploaded = body
             s.upload_headers = dict(self.headers)
             return self._send(202, {"job_id": s.job_id, "status": "queued"})
         self._send(404, {"detail": "not found"})
+
+
+IBM_COLUMNS = ["Timestamp", "From Bank", "Account", "To Bank", "Account.1", "Amount Paid"]
+COLUMNS_ANSWER = {"file_name": "day.csv", "rows": 40000, "rows_estimated": False, "preview_rows": 1000, "max_rows": 5000000,
+                  "columns": IBM_COLUMNS, "dataset_type": "ibm_aml",
+                  "suggested_mapping": {"sender": "From Bank + Account", "receiver": "To Bank + Account.1", "amount": "Amount Paid",
+                                        "timestamp": "Timestamp", "sender_bank": "From Bank", "receiver_bank": "To Bank"},
+                  "fixed_fields": ["amount", "receiver", "sender", "timestamp"], "alternatives": {}, "missing_required": [],
+                  "fields": ["transaction_id", "sender", "receiver", "amount", "timestamp"], "preview": [], "warnings": []}
+BANK_ANSWER = {"file_name": "bank.csv", "rows": 3, "rows_estimated": False, "columns": ["Ref", "Acct Holder", "Counterparty", "Amt", "Booked"],
+               "dataset_type": "generic", "suggested_mapping": {"transaction_id": "Ref", "amount": "Amt"}, "fixed_fields": [],
+               "alternatives": {}, "missing_required": ["sender", "receiver", "timestamp"], "warnings": []}
 
 
 @pytest.fixture
@@ -135,6 +158,7 @@ def service():
     server.final_status, server.final_error = "succeeded", None
     server.result = json.loads(FIXTURE.read_text())
     server.uploaded, server.upload_headers = None, {}
+    server.columns_answer, server.columns_requests = COLUMNS_ANSWER, []
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     yield server
@@ -248,17 +272,37 @@ def queue_upload(db, clock, raw: bytes, job_id="-OUpload0000000000001", chunk=51
     return job_id
 
 
-def test_an_upload_is_rebuilt_byte_for_byte_scored_and_its_results_written(service, tmp_path):
+def confirm(db, job_id, mapping=None):
+    """What the website writes when the uploader confirms the review."""
+    db.update(f"uploadJobs/{job_id}", {"status": "queued", **({"mapping": mapping} if mapping else {})})
+
+
+def test_an_upload_is_first_handed_back_for_its_columns_and_only_then_scored(service, tmp_path):
     b, db, clock = make_bridge(service, tmp_path)
     raw = ("Timestamp,From Bank,Account,To Bank,Account,Amount Paid\n" + "2022/09/06 00:00,1,A,2,B,10.5\n" * 40000).encode()
     job_id = queue_upload(db, clock, raw, chunk=4096)
     found = b.next_upload()
     assert found and found[0] == job_id
     b.process_upload(*found)
+    job = db.get(f"uploadJobs/{job_id}")
+    assert job["status"] == "columns" and service.uploaded is None            # nothing scored yet
+    assert db.get(f"uploadFiles/{job_id}") is not None                        # the file waits with the review
+    assert len(service.columns_requests) == 1 and raw in service.columns_requests[0]
+    review = job["host"]["columns"]
+    assert review["datasetType"] == "ibm_aml" and review["fixed"] == ["amount", "receiver", "sender", "timestamp"]
+    assert review["suggested"]["sender"] == "From Bank + Account" and review["rows"] == 40000
+    assert [c["name"] for c in review["columns"]] == IBM_COLUMNS            # pandas names, lined up by position
+    assert review["columns"][0] == {"name": "Timestamp", "kind": "date", "distinct": 0.01, "samples": ["2022/09/06 00:00"]}
+    assert review["columns"][2]["samples"] == ["A"] and review["columns"][5]["kind"] == "number"
+    assert review["askedAt"] == SERVER_NOW and "missing" not in review
+    assert b.next_upload() is None                                            # it waits for the uploader
+    confirm(db, job_id)
+    b.process_upload(*b.next_upload())
     assert service.uploaded is not None and raw in service.uploaded         # the exact file reached the API
     assert {k.lower(): v for k, v in service.upload_headers.items()}.get("x-api-key") == "secret-key"
     body = service.uploaded.decode("utf-8", "replace")
     assert body.index('name="kind"') < body.index('name="file"')           # fields before the file
+    assert 'name="mapping"' not in body                                      # a fixed layout sends no mapping
     job = db.get(f"uploadJobs/{job_id}")
     assert job["status"] == "succeeded"
     assert db.get(f"uploadFiles/{job_id}") is None                          # chunks are removed
@@ -297,20 +341,110 @@ def test_the_batch_api_failure_message_reaches_the_investigator(service, tmp_pat
     b, db, clock = make_bridge(service, tmp_path)
     job_id = queue_upload(db, clock, b"a,b\n1,2\n")
     b.process_upload(*b.next_upload())
+    confirm(db, job_id)
+    b.process_upload(*b.next_upload())
     error = db.get(f"uploadJobs/{job_id}/host/error")
     assert error == {"code": "invalid_input", "message": "The file has no Timestamp column."}
 
 
-def test_abandoned_and_cancelled_uploads_are_cleared(service, tmp_path):
+BANK = b"Ref,Acct Holder,Counterparty,Amt,Booked\nP-1,ACC-1,ACC-9,1250.00,03/09/2026 10:15\nP-2,ACC-2,ACC-1,80.50,03/09/2026 10:16\nP-3,ACC-1,ACC-7,9.99,04/09/2026 09:00\n"
+
+
+def test_a_bank_export_is_scored_with_the_columns_the_uploader_confirmed(service, tmp_path):
+    service.columns_answer = BANK_ANSWER
+    b, db, clock = make_bridge(service, tmp_path)
+    job_id = queue_upload(db, clock, BANK)
+    b.process_upload(*b.next_upload())
+    review = db.get(f"uploadJobs/{job_id}/host/columns")
+    assert review["missing"] == ["sender", "receiver", "timestamp"] and review["suggested"] == {"transaction_id": "Ref", "amount": "Amt"}
+    assert [(c["kind"], c["distinct"]) for c in review["columns"]] == [("text", 1.0), ("text", 0.67), ("text", 1.0), ("number", 1.0), ("date", 1.0)]
+    assert review["columns"][1]["samples"] == ["ACC-1", "ACC-2"]
+    # The uploader's answer: columns for the missing fields, "" for a match they reject, an unknown field ignored.
+    assert review["columns"][4]["dateOrder"] == "ambiguous" and "dateOrder" not in review["columns"][0]
+    confirm(db, job_id, {"sender": "Acct Holder", "receiver": "Counterparty", "timestamp": "Booked", "transaction_id": "", "bogus": "x", "amount": 7,
+                         "date_order": "month_first"})
+    b.process_upload(*b.next_upload())
+    assert db.get(f"uploadJobs/{job_id}/status") == "succeeded"
+    sent = json.loads(service.columns_requests[1].decode().split('name="mapping"\r\n\r\n')[1].split("\r\n--")[0])
+    assert sent == {"sender": "Acct Holder", "receiver": "Counterparty", "timestamp": "Booked", "transaction_id": ""}
+    body = service.uploaded.decode("utf-8", "replace")
+    assert 'name="mapping"' in body and body.index('name="mapping"') < body.index('name="file"')
+    assert json.loads(body.split('name="mapping"\r\n\r\n')[1].split("\r\n--")[0]) == sent
+    assert 'name="day_first"\r\n\r\nfalse' in body                         # the date order, as the API takes it
+
+
+def test_a_confirmation_that_still_leaves_a_required_field_unmatched_is_asked_again(service, tmp_path):
+    service.columns_answer = BANK_ANSWER
+    b, db, clock = make_bridge(service, tmp_path)
+    job_id = queue_upload(db, clock, BANK)
+    b.process_upload(*b.next_upload())
+    confirm(db, job_id, {"sender": "Acct Holder"})
+    b.process_upload(*b.next_upload())
+    job = db.get(f"uploadJobs/{job_id}")
+    assert job["status"] == "columns" and service.uploaded is None
+    assert job["host"]["columns"]["message"] == "Still needed: receiver, date and time. Choose a column for each."
+    assert job["host"]["columns"]["missing"] == ["receiver", "timestamp"]
+    assert db.get(f"uploadFiles/{job_id}") is not None
+    # A column name the API does not know fails with the API's own sentence.
+    confirm(db, job_id, {"sender": "Nowhere", "receiver": "Counterparty", "timestamp": "Booked"})
+    b.process_upload(*b.next_upload())
+    job = db.get(f"uploadJobs/{job_id}")
+    assert job["status"] == "failed" and job["host"]["error"]["message"] == "Mapping refers to unknown column 'Nowhere'"
+    assert db.get(f"uploadFiles/{job_id}") is None
+
+
+def test_a_host_without_the_columns_api_says_so(service, tmp_path):
+    service.columns_answer = None
+    b, db, clock = make_bridge(service, tmp_path)
+    job_id = queue_upload(db, clock, BANK)
+    b.process_upload(*b.next_upload())
+    error = db.get(f"uploadJobs/{job_id}/host/error")
+    assert error["code"] == "no_columns_api" and "Update Acurion on the host" in error["message"]
+
+
+def test_column_profiles_read_kinds_samples_and_odd_files(tmp_path):
+    path = tmp_path / "odd.csv"
+    path.write_bytes("﻿When;Who;Amount (EUR);Note\n2026-09-03T10:15:00Z;Ann;€1.250,00;\n2026-09-03T10:16:00Z;Bob;\"€ 80,50\";late\n;;;\n".encode())
+    profiles = bridge_module.profile_columns(path, ["When", "Who", "Amount (EUR)", "Note"])
+    assert [p["kind"] for p in profiles] == ["date", "text", "number", "text"]
+    assert profiles[0]["samples"] == ["2026-09-03T10:15:00Z", "2026-09-03T10:16:00Z"] and profiles[3]["samples"] == ["late"]
+    assert profiles[1]["distinct"] == 1.0
+    # Names that do not line up by count are matched by name; unknown ones are empty.
+    profiles = bridge_module.profile_columns(path, ["Who", "Missing"])
+    assert profiles[0]["samples"] == ["Ann", "Bob"] and profiles[1] == {"name": "Missing", "kind": "empty", "distinct": 0.0}  # no empty lists (Firebase drops them)
+    assert bridge_module.column_kind(["10:15", "10:16:30", "9:05 pm"]) == ("time", 1.0)
+    assert bridge_module.date_order(["03/09/2026 10:15", "14/09/2026"]) == "day_first"
+    assert bridge_module.date_order(["03/09/2026", "09/14/26"]) == "month_first"
+    assert bridge_module.date_order(["03/09/2026", "04/09/2026"]) == "ambiguous" and bridge_module.date_order(["2026-09-03"]) is None
+    assert bridge_module.clean_mapping({"sender": "A", "date_order": "month_first"}) == {"sender": "A", "date_order": "month_first"}
+    assert bridge_module.clean_mapping({"date_order": "sideways"}) == {}
+    assert bridge_module.clean_mapping({"sender": "A", "nope": "B", "amount": 3, "label": ""}) == {"sender": "A", "label": ""}
+    assert bridge_module.clean_mapping("junk") == {}
+
+
+def test_abandoned_unconfirmed_stuck_and_cancelled_uploads_are_cleared_or_taken_again(service, tmp_path):
     b, db, clock = make_bridge(service, tmp_path)
     stale = queue_upload(db, clock, b"a\n1\n", job_id="-Ostale")
     db.set(f"uploadJobs/{stale}/status", "uploading")
     db.set(f"uploadJobs/{stale}/createdAt", clock() - 31 * 60_000)
     cancelled = queue_upload(db, clock, b"a\n1\n", job_id="-Ocancelled")
     db.set(f"uploadJobs/{cancelled}/status", "cancelled")
+    unconfirmed = queue_upload(db, clock, b"a\n1\n", job_id="-Ounconfirmed")
+    db.set(f"uploadJobs/{unconfirmed}/status", "columns")
+    db.set(f"uploadJobs/{unconfirmed}/host/columns/askedAt", clock() - 25 * 3600_000)
+    waiting = queue_upload(db, clock, b"a\n1\n", job_id="-Owaiting")
+    db.set(f"uploadJobs/{waiting}/status", "columns")
+    db.set(f"uploadJobs/{waiting}/host/columns/askedAt", clock() - 3600_000)
     assert b.next_upload() is None
     assert db.get(f"uploadJobs/{stale}/status") == "failed"
-    assert db.get(f"uploadFiles/{stale}") is None and db.get(f"uploadFiles/{cancelled}") is None
+    assert db.get(f"uploadJobs/{unconfirmed}/status") == "failed" and "not confirmed within a day" in db.get(f"uploadJobs/{unconfirmed}/host/error/message")
+    assert db.get(f"uploadJobs/{waiting}/status") == "columns" and db.get(f"uploadFiles/{waiting}") is not None
+    assert db.get(f"uploadFiles/{stale}") is None and db.get(f"uploadFiles/{cancelled}") is None and db.get(f"uploadFiles/{unconfirmed}") is None
+    # A job left "received" when the bridge was stopped is taken again after ten minutes.
+    stuck = queue_upload(db, clock, b"a\n1\n", job_id="-Ostuck")
+    db.set(f"uploadJobs/{stuck}/status", "received")
+    db.set(f"uploadJobs/{stuck}/host/receivedAt", clock() - 11 * 60_000)
+    assert b.next_upload()[0] == stuck
 
 
 def test_uploads_are_taken_oldest_first(service, tmp_path):

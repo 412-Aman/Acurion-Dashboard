@@ -9,11 +9,13 @@ import { canControlDesk, canStart, canPause, describeK7, newRecentAlerts, format
 import { getMyRole } from '../lib/dataService.js';
 import { formatRisk, formatDateTime } from '../lib/utils.js';
 
-type Notice = { key: string; tone: 'alert' | 'ok' | 'warn'; title: string; detail: string; note: string; href: string };
+type Notice = { key: string; tone: 'alert' | 'ok' | 'warn' | 'ask'; title: string; detail: string; note: string; href: string; jobId?: string };
 type Mode = 'hidden' | 'compact' | 'expanded' | 'notice';
 const STATE_LABEL: Record<string, string> = { 'getting ready': 'Loading', ready: 'Ready', running: 'Running', paused: 'Paused', finished: 'Finished', failed: 'Needs attention', offline: 'Offline' };
 const NOTICE_MS = 5200;
-const ACTIVE_UPLOAD = ['uploading', 'queued', 'received', 'analysing'];
+const ACTIVE_UPLOAD = ['uploading', 'queued', 'received', 'columns', 'analysing'];
+const UPLOAD_WORD: Record<string, string> = { uploading: 'Uploading', columns: 'Confirm columns' };
+const openUpload = (jobId?: string) => document.dispatchEvent(new CustomEvent('acurion:open-upload', { detail: { jobId } }));
 
 const paymentClock = (iso: string | null) => iso && Number.isFinite(Date.parse(iso)) ? `${new Date(iso).toISOString().slice(11, 16)} UTC` : '–';
 const percent = (value: number) => `${(Math.floor(value * 1000) / 10).toFixed(1)}%`;
@@ -65,6 +67,8 @@ function HostIsland() {
         if (job.status === 'succeeded') showNotice({ key: job.id, tone: 'ok', title: `${job.fileName} analysed`, detail: describeUpload(job),
           note: `${formatCount(job.summary?.networksWritten)} networks · ${formatCount(job.summary?.highRisk)} high-risk transfers`, href: `alerts.html?source=${encodeURIComponent(job.id)}` });
         if (job.status === 'failed') showNotice({ key: job.id, tone: 'warn', title: `${job.fileName} was not analysed`, detail: describeUpload(job), note: 'Open Transactions to see your uploads.', href: 'transactions.html#uploads' });
+        if (job.status === 'columns') showNotice({ key: `${job.id}-columns`, tone: 'ask', title: `Confirm the columns of ${job.fileName}`, detail: 'The host has read the file. Check what each column is used for.',
+          note: 'Nothing is scored until you confirm.', href: 'transactions.html#uploads', jobId: job.id });
       }
       setUploads(jobs);
     });
@@ -122,7 +126,7 @@ function HostIsland() {
 
   let content: ReactNode;
   if (mode === 'notice' && notice) {
-    content = <a className="island-notice" href={notice.href} data-tone={notice.tone} onClick={() => setNotice(null)}>
+    content = <a className="island-notice" href={notice.href} data-tone={notice.tone} onClick={event => { setNotice(null); if (notice.jobId) { event.preventDefault(); openUpload(notice.jobId); } }}>
       <span className="island-notice-mark" aria-hidden="true" />
       <span className="island-notice-text"><strong>{notice.title}</strong><small>{notice.detail}</small><em>{notice.note}</em></span>
       <span className="island-notice-go">Open</span>
@@ -149,13 +153,14 @@ function HostIsland() {
           <span className="island-alert-text"><strong className="pii">{alert.accountId}</strong><small>{alert.reason || formatDateTime(alert.timestamp)}</small></span>
           <span className="island-alert-score">{formatRisk(alert.riskScore)}</span>
         </a>)}</div>}
-      {myUpload && <a className="island-upload" href="transactions.html#uploads"><UploadGlyph /><span><strong>{myUpload.fileName}</strong><small>{describeUpload(myUpload)}</small></span></a>}
+      {myUpload && <a className="island-upload" href="transactions.html#uploads" data-ask={myUpload.status === 'columns' || undefined}
+        onClick={event => { if (myUpload.status === 'columns') { event.preventDefault(); setOpen(false); openUpload(myUpload.id); } }}><UploadGlyph /><span><strong>{myUpload.fileName}</strong><small>{describeUpload(myUpload)}</small></span></a>}
       <div className="island-actions">
         {online && controls && (canPause(status)
           ? <button type="button" className="island-button" disabled={busy} onClick={() => command('stop')}>{busy ? 'Pausing…' : 'Pause'}</button>
           : <button type="button" className="island-button is-primary" disabled={busy || !canStart(status)} onClick={() => command('start')}>{busy ? 'Starting…' : 'Start'}</button>)}
         {online && !controls && <span className="island-note">A reviewer starts and pauses K7.</span>}
-        <button type="button" className="island-button" onClick={() => { setOpen(false); document.dispatchEvent(new CustomEvent('acurion:open-upload')); }}><UploadGlyph />Upload dataset</button>
+        <button type="button" className="island-button" onClick={() => { setOpen(false); openUpload(); }}><UploadGlyph />Upload dataset</button>
         <a className="island-link" href="index.html#live-detection">Details</a>
       </div>
       {message && <p className="island-message" role="status">{message}</p>}
@@ -164,7 +169,7 @@ function HostIsland() {
     const uploadOnly = !online || (myUpload && k7.state !== 'running');
     content = <button type="button" className="island-compact" aria-expanded={open} aria-controls="host-island-panel" onClick={() => setOpen(true)}
       aria-label={uploadOnly ? `Upload: ${myUpload?.fileName}, ${describeUpload(myUpload)}` : `Acurion K7: ${STATE_LABEL[k7.state]}. Open live detection`}>
-      {uploadOnly ? <><span className="island-glyph"><UploadGlyph /></span><span className="island-name">{myUpload.status === 'uploading' ? 'Uploading' : 'Analysing'}</span><span className="island-figure island-file">{myUpload.fileName}</span></>
+      {uploadOnly ? <><span className="island-glyph" data-ask={myUpload.status === 'columns' || undefined}><UploadGlyph /></span><span className="island-name">{UPLOAD_WORD[myUpload.status] || 'Analysing'}</span><span className="island-figure island-file">{myUpload.fileName}</span></>
         : <>
           <span className="island-dot" data-state={k7.state} aria-hidden="true" />
           <span className="island-name">K7</span>

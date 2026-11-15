@@ -86,21 +86,24 @@ Options:
 - **Status, about once a second.** It reads the desk's status and the batch API's health, and writes them to `hostDesk/status` with the server time. The website treats the host as offline after 15 seconds without an update.
 - **Commands.** It reads `hostDesk/command`, which only reviewers and admins can write, and calls `POST /demo/start` or `/demo/stop` once. It answers in `hostDesk/lastCommand`.
   - It never carries out a command older than one minute, or one that was waiting when the bridge started. A Start left in the database overnight therefore never starts the recording.
-- **Uploads, oldest first, one at a time.**
-  1. It rebuilds the file from its chunks.
-  2. It checks the size and SHA-256.
-  3. It deletes the chunks from Firebase.
-  4. It sends the file to `POST /api/v1/jobs` and follows the job's progress.
+- **Uploads, oldest first, one at a time.** Nothing is scored before the uploader has seen the columns.
+  1. It rebuilds the file from its chunks and checks the size and SHA-256.
+  2. It asks your API how the columns map to Acurion's fields: `POST /api/columns`, your own standardisation. It adds what each column looks like (kind, distinct share, three sample values, and whether dates like `03/09/2026` are ambiguous) and writes the review to `uploadJobs/{id}/host/columns`. The job's status becomes `columns`.
+  3. The website shows the uploader every field with the matched column filled in, best guesses for anything unmatched, and dropdowns to change them. They confirm; the website writes `uploadJobs/{id}/mapping` and sets the status back to `queued`.
+  4. The bridge rebuilds the file again, repeats `POST /api/columns` with that mapping (if a required field is still missing it asks again), deletes the chunks, and sends the file to `POST /api/v1/jobs` with `mapping` (and `day_first` when the uploader chose a date order). It then follows the job's progress.
+  5. Known layouts (IBM AML, PaySim) show their fixed columns; confirming them sends no mapping.
 - **Results.** It writes the analysis to Firebase:
   - up to 150 alerts: every high-risk transfer, then the 50 strongest medium-risk ones;
   - their transfers;
   - the 15 riskiest networks, with up to 40 transfers each;
   - a summary: counts, trust level, warnings, and precision and recall when the file has a label column.
 
-  Failures carry the API's own sentence, for example "The file has no Timestamp column."
-- **Clean-up.** Uploads that never finish are cleared after 30 minutes. Cancelled uploads have their chunks removed.
+  Failures carry the API's own sentence, for example "Mapping refers to unknown column 'Nowhere'."
+- **Clean-up.** Uploads that never finish are cleared after 30 minutes, reviews not confirmed within a day are cleared, and a job left half-way when the bridge was stopped is taken again after 10 minutes. Cancelled uploads have their chunks removed.
 
-Measured on a Mac with the real API: one day of HI-Small (482,089 transfers, 43 MB) was uploaded in 22 chunks and analysed. 49 high-risk transfers and 29 networks came back in about 15 seconds after it arrived.
+Measured on a Mac with the real API: one day of HI-Small (482,089 transfers, 43 MB) was uploaded in 22 chunks; the column check took 1.5 seconds and the analysis about 16 seconds after confirming (49 high-risk transfers, 29 networks). A small bank export with headers such as `Acct Holder`, `Counterparty Acct`, `Amt GBP` and `Booked` came back with all four required fields unmatched; after the uploader chose them (and "day first" for its dates) it was scored.
+
+**If you update the bridge:** copy the new `host/acurion_bridge.py` over the old one and restart it. Version 1.1.0 is the first with the column review; the website shows "The batch API on the host has no /api/columns" if your `api.py` is older than the review endpoint.
 
 ## Before the presentation
 
@@ -116,7 +119,9 @@ The recording holds about 30 minutes of payments and cannot be rewound. Only rev
    - The first alert opens the capsule as a notification within about a minute.
    - Open the alert: K7's reasons are drawn as bars.
 4. Upload a CSV with **Upload dataset**:
-   - The dialog moves from Sent, to Received, to Analysing, to Results.
+   - After it is sent, the dialog shows **Confirm the columns**: every field with the matched column, dropdowns to change them, and a date-order choice when the dates could be read both ways. The header capsule also asks for it if the window was closed.
+   - Press **Confirm and analyse**. The dialog moves to Analysing, then Results.
    - **Open N alerts** shows only that file's alerts.
    - **View networks** shows its networks.
+   - Try a file with unusual headers (for example `Acct Holder`, `Counterparty Acct`, `Amt GBP`, `Booked`): the review marks the guesses "Best guess, please check" and will not continue until every required field has a column.
 5. Press **Pause**, then stop the bridge. Within 15 seconds the capsule disappears and System status shows the host as offline.

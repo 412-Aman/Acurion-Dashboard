@@ -53,12 +53,16 @@ Commands and files pass through Firebase, where the rules check them; the host b
 - **Uploads:** a CSV up to 100 MB is gzip-compressed and fingerprinted (SHA-256) in the browser and
   written as base64 chunks to `uploadFiles/{id}`. No browser can read those chunks back. Only the
   uploader can write them, once each, while the upload is open. The bridge checks the size and the
-  fingerprint, deletes the chunks, and sends the file to the batch API on `127.0.0.1` with the API
-  key, which never leaves the host. Its unpacked copy is removed after scoring. The results
-  (alerts, transfers, networks) are shared with every investigator.
-- **Abuse limits:** 300 chunks of at most 700 KB per upload. The host takes one upload at a time
-  and clears uploads that never finish after 30 minutes. A determined signed-in user could still
-  fill the database's free quota with repeated uploads; restrict sign-up if that matters.
+  fingerprint, asks the batch API (on `127.0.0.1`, with the API key, which never leaves the host)
+  how the columns map, and writes that review to the job. Nothing is scored until the uploader
+  confirms the mapping; only the uploader can write `uploadJobs/{id}/mapping`, only field names
+  from Acurion's schema, only while the job waits in status `columns`. The chunks stay until the
+  file is submitted, then they and the host's unpacked copy are removed. The review's sample
+  values (three per column) are visible to every signed-in investigator, like the results.
+- **Abuse limits:** 300 chunks of at most 700 KB per upload. The host takes one upload at a time,
+  clears uploads that never finish after 30 minutes and reviews not confirmed within a day. A
+  determined signed-in user could still fill the database's free quota with repeated uploads;
+  restrict sign-up if that matters.
 
 ## Browser hardening
 

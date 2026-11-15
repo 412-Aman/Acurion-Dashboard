@@ -87,36 +87,42 @@
       ],
       "$jobId": {
         ".write": "(!data.exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer') || (data.exists() && newData.exists() && auth != null && auth.token.email_verified === true && data.child('by').val() === auth.uid)",
-        ".validate": "newData.hasChildren(['by', 'byName', 'fileName', 'bytes', 'packedBytes', 'chunks', 'sha256', 'status', 'createdAt']) && newData.child('by').val() === auth.uid && (data.exists() ? (newData.child('createdAt').val() === data.child('createdAt').val() && newData.child('fileName').val() === data.child('fileName').val() && newData.child('bytes').val() === data.child('bytes').val() && newData.child('chunks').val() === data.child('chunks').val() && newData.child('sha256').val() === data.child('sha256').val() && newData.child('packedBytes').val() === data.child('packedBytes').val() && newData.child('byName').val() === data.child('byName').val() && ((data.child('status').val() === 'uploading' && newData.child('status').val().matches(/^(queued|cancelled)$/)) || (data.child('status').val() === 'queued' && newData.child('status').val() === 'cancelled'))) : (newData.child('status').val() === 'uploading' && newData.child('createdAt').val() === now))",
+        ".validate": "newData.hasChildren(['by', 'byName', 'fileName', 'bytes', 'packedBytes', 'chunks', 'sha256', 'status', 'createdAt']) && newData.child('by').val() === auth.uid && (data.exists() || (newData.child('status').val() === 'uploading' && newData.child('createdAt').val() === now))",
         "by": {
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString() && (!data.exists() || newData.val() === data.val())"
         },
         "byName": {
-          ".validate": "newData.isString() && newData.val().length <= 120"
+          ".validate": "newData.isString() && newData.val().length <= 120 && (!data.exists() || newData.val() === data.val())"
         },
         "fileName": {
-          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200 && (!data.exists() || newData.val() === data.val())"
         },
         "bytes": {
-          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 104857600"
+          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 104857600 && (!data.exists() || newData.val() === data.val())"
         },
         "packedBytes": {
-          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 104857600"
+          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 104857600 && (!data.exists() || newData.val() === data.val())"
         },
         "chunks": {
-          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 300"
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 300 && (!data.exists() || newData.val() === data.val())"
         },
         "columns": {
-          ".validate": "newData.isString() && newData.val().length <= 4000"
+          ".validate": "newData.isString() && newData.val().length <= 4000 && (!data.exists() || newData.val() === data.val())"
         },
         "status": {
-          ".validate": "newData.isString()"
+          ".validate": "newData.isString() && (!data.exists() ? newData.val() === 'uploading' : ((data.val() === 'uploading' && newData.val().matches(/^(queued|cancelled)$/)) || (data.val() === 'queued' && newData.val() === 'cancelled') || (data.val() === 'columns' && newData.val().matches(/^(queued|cancelled)$/))))"
         },
         "createdAt": {
-          ".validate": "newData.isNumber()"
+          ".validate": "newData.isNumber() && (!data.exists() || newData.val() === data.val())"
         },
         "sha256": {
-          ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/) && (!data.exists() || newData.val() === data.val())"
+        },
+        "mapping": {
+          ".validate": "data.parent().child('status').val() === 'columns' && newData.hasChildren()",
+          "$field": {
+            ".validate": "$field.matches(/^(transaction_id|sender|receiver|amount|timestamp|time_of_day|amount_received|payment_currency|receiving_currency|payment_format|sender_bank|receiver_bank|label|date_order)$/) && newData.isString() && newData.val().length <= 200"
+          }
         },
         "$other": {
           ".validate": false

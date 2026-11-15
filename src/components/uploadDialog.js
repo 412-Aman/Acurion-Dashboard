@@ -1,14 +1,16 @@
-// Upload a dataset: choose a CSV, send it (compressed) to the Acurion host through Firebase, follow the
-// analysis, then open the alerts and networks it produced. Each step fits the window; the primary action
-// stays in the footer. Opened by any [data-open-upload] button or the `acurion:open-upload` event.
+// Upload a dataset: choose a CSV, send it (compressed) to the Acurion host through Firebase, confirm what
+// each column is used for, follow the analysis, then open the alerts and networks it produced. Nothing is
+// scored before the uploader has seen and confirmed the columns. Each step fits the window; the primary
+// action stays in the footer. Opened by any [data-open-upload] button or the `acurion:open-upload` event.
 import { escapeHTML as esc, icon } from './icons.js';
 import { DEMO_MODE, HOST_PREVIEW, exitDemo } from '../lib/config.js';
-import { inspectCsv, uploadProblem, formatBytes, MAX_UPLOAD_BYTES } from '../lib/uploadPacking.js';
-import { uploadDataset, watchUpload, cancelUpload, describeUpload, watchHost } from '../lib/hostDesk.js';
+import { inspectCsv, uploadProblem, formatBytes, MAX_UPLOAD_BYTES, COLUMN_FIELDS, guessColumns, reviewMapping, reviewProblem, dateOrderNeeded } from '../lib/uploadPacking.js';
+import { uploadDataset, watchUpload, cancelUpload, confirmColumns, describeUpload, watchHost } from '../lib/hostDesk.js';
 import { patternName } from './modelExplanation.js';
 import { formatDateTime } from '../lib/utils.js';
 
 const FORMATS = { ibm_aml: 'IBM AML layout', paysim: 'PaySim layout', generic: 'Bank export', custom: 'Bank export' };
+const STEPS = ['Choose', 'Send', 'Columns', 'Analyse', 'Results'];
 let dialog, host = null, stopJob = () => {}, controller = null;
 let state = { step: 'choose' };
 const signedOut = () => DEMO_MODE && !HOST_PREVIEW;
@@ -21,7 +23,11 @@ function ensureDialog() {
   document.body.append(dialog);
   dialog.addEventListener('close', () => { stopJob(); stopJob = () => {}; });
   dialog.addEventListener('click', onClick);
-  dialog.addEventListener('change', event => { if (event.target.id === 'upload-file') choose(event.target.files[0]); });
+  dialog.addEventListener('change', event => {
+    if (event.target.id === 'upload-file') choose(event.target.files[0]);
+    if (event.target.dataset.field) pick(event.target.dataset.field, event.target.value);
+  });
+  dialog.addEventListener('toggle', event => { if (event.target.classList.contains('upload-more')) state.more = event.target.open; }, true);
   dialog.addEventListener('dragover', event => { const zone = event.target.closest('.upload-drop'); if (zone) { event.preventDefault(); zone.dataset.over = 'true'; } });
   dialog.addEventListener('dragleave', event => { const zone = event.target.closest('.upload-drop'); if (zone) delete zone.dataset.over; });
   dialog.addEventListener('drop', event => { const zone = event.target.closest('.upload-drop'); if (!zone) return; event.preventDefault(); delete zone.dataset.over; choose(event.dataTransfer.files[0]); });
@@ -34,7 +40,7 @@ export function openUploadDialog(jobId) {
   stopJob();
   if (signedOut()) state = { step: 'signin' };
   else if (jobId) { state = { step: 'analysing', jobId }; follow(jobId); }
-  else if (!['sending', 'analysing'].includes(state.step) || !dialog.open) state = { step: 'choose' };
+  else if (!['sending', 'analysing', 'columns'].includes(state.step) || !dialog.open) state = { step: 'choose' };
   render();
   if (!dialog.open) dialog.showModal();
 }
@@ -50,7 +56,14 @@ async function choose(file) {
 function follow(jobId) {
   stopJob();
   stopJob = watchUpload(jobId, job => {
-    state = { ...state, jobId, job, step: job.status === 'succeeded' ? 'done' : job.status === 'failed' || job.status === 'cancelled' ? 'failed' : 'analysing' };
+    const step = job.status === 'succeeded' ? 'done' : job.status === 'failed' || job.status === 'cancelled' ? 'failed' : job.status === 'columns' && job.columns ? 'columns' : 'analysing';
+    if (step === 'columns' && (state.step !== 'columns' || state.askedAt !== job.columns.askedAt)) {
+      // A fresh review: start from what the host matched, plus a guess for anything required it could not.
+      const guessed = guessColumns(job.columns.columns, job.columns.suggested);
+      const picks = {};
+      for (const { id } of COLUMN_FIELDS) if (!job.columns.fixed.includes(id)) picks[id] = job.columns.suggested[id] || guessed[id] || '';
+      state = { step, jobId, job, picks, guessed, askedAt: job.columns.askedAt, more: !!state.more };
+    } else state = { ...state, jobId, job, step };
     if (dialog.open) render();
   });
 }
@@ -71,6 +84,46 @@ async function send() {
   } finally { controller = null; }
 }
 
+// One column pick changed: update that row, the problem line and the Confirm button, never the whole form.
+function pick(field, column) {
+  if (state.step !== 'columns') return;
+  state.picks = { ...state.picks, [field]: column };
+  const row = dialog.querySelector(`[data-review-row="${CSS.escape(field)}"]`);
+  if (row && field !== 'date_order') { const chip = row.querySelector('.review-chip'), [tone, label] = chipFor(field); chip.dataset.tone = tone; chip.textContent = label; row.querySelector('.review-sample').textContent = sampleOf(column); }
+  if (field === 'timestamp') { const order = dialog.querySelector('[data-review-row="date_order"]'); if (order) order.hidden = !dateOrderNeeded(state.job.columns.columns, column); }
+  const problem = reviewProblem(state.picks, state.job.columns.fixed), line = dialog.querySelector('[data-review-problem]');
+  if (line) { line.textContent = problem; line.hidden = !problem; }
+  const button = dialog.querySelector('[data-upload-action="confirm"]');
+  if (button) button.disabled = !!problem;
+}
+
+function chipFor(field) {
+  const { suggested, fixed } = state.job.columns, column = state.picks[field], required = COLUMN_FIELDS.find(f => f.id === field).required;
+  if (fixed.includes(field)) return ['fixed', 'Fixed by the layout'];
+  if (!column) return required ? ['needed', 'Choose a column'] : ['none', 'Not in this file'];
+  if (suggested[field] === column) return ['matched', 'Matched by name'];
+  if (state.guessed[field] === column) return ['check', 'Best guess, please check'];
+  return ['chosen', 'Your choice'];
+}
+
+const sampleOf = column => { const found = state.job?.columns?.columns.find(c => c.name === column); return found?.samples.length ? `For example ${found.samples.join(', ')}` : ''; };
+
+async function confirm() {
+  const { jobId, job, picks } = state;
+  if (reviewProblem(picks, job.columns.fixed)) return;
+  const button = dialog.querySelector('[data-upload-action="confirm"]');
+  if (button) { button.disabled = true; button.textContent = 'Starting…'; }
+  try {
+    await confirmColumns(jobId, reviewMapping(picks, job.columns.suggested, job.columns.fixed, job.columns.columns));
+    state = { ...state, step: 'analysing', job: { ...job, status: 'queued' } };
+    render();
+  } catch {
+    const line = dialog.querySelector('[data-review-problem]');
+    if (line) { line.textContent = 'The columns could not be saved. Check your connection and try again.'; line.hidden = false; }
+    if (button) { button.disabled = false; button.innerHTML = `${icon('arrow', 16)}Confirm and analyse`; }
+  }
+}
+
 function onClick(event) {
   const target = event.target.closest('[data-upload-action]');
   if (event.target === dialog) { dialog.close(); return; }   // backdrop
@@ -78,6 +131,7 @@ function onClick(event) {
   const action = target.dataset.uploadAction;
   if (action === 'close') dialog.close();
   if (action === 'send' && state.file && !state.problem) send();
+  if (action === 'confirm') confirm();
   if (action === 'again') { stopJob(); state = { step: 'choose' }; render(); }
   if (action === 'clear') { state = { step: 'choose' }; render(); }
   if (action === 'abort') controller?.abort();
@@ -85,14 +139,26 @@ function onClick(event) {
   if (action === 'signin') { exitDemo(); location.href = 'login.html?next=index.html'; }
 }
 
-const stepper = active => `<ol class="upload-steps" aria-label="Upload steps">${['Choose', 'Send', 'Analyse', 'Results'].map((label, i) => `<li data-state="${i < active ? 'done' : i === active ? 'current' : 'next'}">${label}</li>`).join('')}</ol>`;
+const stepper = active => `<ol class="upload-steps" aria-label="Upload steps">${STEPS.map((label, i) => `<li data-state="${i < active ? 'done' : i === active ? 'current' : 'next'}">${label}</li>`).join('')}</ol>`;
 const frame = (title, lead, body, footer, active) => `<div class="upload-frame"><header class="upload-header"><div><span class="section-kicker">Upload dataset</span><h2 id="upload-title">${title}</h2>${lead ? `<p>${lead}</p>` : ''}</div><button class="icon-button" data-upload-action="close" aria-label="Close">${icon('close')}</button></header>${active == null ? '' : stepper(active)}<div class="upload-body">${body}</div><footer class="upload-footer">${footer}</footer></div>`;
 
 function hostLine() {
   if (!host || host.connection === 'loading') return '<p class="upload-host" data-tone="neutral">Checking the Acurion host…</p>';
-  if (host.connection === 'online' && host.uploads.state === 'ready') return '<p class="upload-host" data-tone="ok">The Acurion host is ready to analyse it.</p>';
+  if (host.connection === 'online' && host.uploads.state === 'ready') return '<p class="upload-host" data-tone="ok">The Acurion host is ready to read it.</p>';
   if (host.connection === 'online' && host.uploads.state === 'busy') return '<p class="upload-host" data-tone="neutral">The host is analysing another file. Yours waits its turn.</p>';
-  return '<p class="upload-host" data-tone="warn">The Acurion host is offline. Your file waits in the queue and is analysed when the host reconnects.</p>';
+  return '<p class="upload-host" data-tone="warn">The Acurion host is offline. Your file waits in the queue and is read when the host reconnects.</p>';
+}
+
+function reviewRow(field) {
+  const { columns, suggested, fixed } = state.job.columns, column = state.picks[field.id] || '', [tone, label] = chipFor(field.id);
+  const control = fixed.includes(field.id)
+    ? `<span class="review-fixed">${esc(suggested[field.id] || 'Set by the layout')}</span>`
+    : `<select class="input" data-field="${esc(field.id)}" aria-label="${esc(field.label)} column"><option value="">${field.required ? 'Choose a column…' : 'Not in this file'}</option>${columns.map(c => `<option value="${esc(c.name)}" ${c.name === column ? 'selected' : ''}>${esc(c.name)}${c.samples.length ? ` · ${esc(c.samples.slice(0, 2).join(', '))}` : ''}</option>`).join('')}</select>`;
+  const row = `<div class="review-row" data-review-row="${esc(field.id)}"><div class="review-field"><strong>${esc(field.label)}${field.required ? '' : '<span class="review-optional"> optional</span>'}</strong>${field.hint ? `<small>${esc(field.hint)}</small>` : ''}<span class="review-chip" data-tone="${tone}">${label}</span></div><div class="review-pick">${control}<small class="review-sample">${esc(sampleOf(column))}</small></div></div>`;
+  if (field.id !== 'timestamp') return row;
+  // Dates like 03/09/2026 read both ways; when nothing in the file settles it, the uploader says which.
+  const order = state.picks.date_order === 'month_first' ? 'month_first' : 'day_first';
+  return row + `<div class="review-row review-row-sub" data-review-row="date_order" ${dateOrderNeeded(columns, column) ? '' : 'hidden'}><div class="review-field"><strong>Date order</strong><small>This column’s dates, such as 03/09/2026, can be read both ways</small></div><div class="review-pick"><select class="input" data-field="date_order" aria-label="Date order"><option value="day_first" ${order === 'day_first' ? 'selected' : ''}>Day first: 03/09 is 3 September</option><option value="month_first" ${order === 'month_first' ? 'selected' : ''}>Month first: 03/09 is 9 March</option></select></div></div>`;
 }
 
 function render() {
@@ -106,31 +172,57 @@ function render() {
   if (s.step === 'choose') {
     const file = s.file;
     const body = !file
-      ? `<label class="upload-drop" for="upload-file"><span class="upload-drop-icon">${icon('upload', 22)}</span><strong>Drop a CSV file here, or browse</strong><small>Up to ${formatBytes(MAX_UPLOAD_BYTES)}. Columns are matched automatically: IBM AML, PaySim and most bank exports work as they are.</small><input type="file" id="upload-file" accept=".csv,text/csv"></label>
+      ? `<label class="upload-drop" for="upload-file"><span class="upload-drop-icon">${icon('upload', 22)}</span><strong>Drop a CSV file here, or browse</strong><small>Up to ${formatBytes(MAX_UPLOAD_BYTES)}. The host matches the columns by name, IBM AML, PaySim and most bank exports included, and you confirm them before anything is scored.</small><input type="file" id="upload-file" accept=".csv,text/csv"></label>
          <ul class="upload-tips"><li>Include sender, receiver, amount and time columns. Currency and bank columns help.</li><li>Seven days or more give the best results; the model learns each account’s habits from the file itself.</li><li>A column of known outcomes (for example “Is Laundering”) is used only to measure the results, never for scoring.</li></ul>`
       : `<div class="upload-file-card"><span class="upload-file-icon">${icon('reports', 20)}</span><div><strong>${esc(file.name)}</strong><small>${formatBytes(file.size)}${s.inspection?.rowsEstimate ? ` · about ${s.inspection.rowsEstimate.toLocaleString('en-GB')} rows` : ''}</small></div><button class="text-button" data-upload-action="clear">Change</button></div>
          ${s.inspection?.columns.length ? `<div class="upload-columns"><span>Columns found</span><div>${s.inspection.columns.slice(0, 12).map(c => `<code>${esc(c)}</code>`).join('')}${s.inspection.columns.length > 12 ? `<small>+${s.inspection.columns.length - 12} more</small>` : ''}</div></div>` : ''}
          ${s.problem ? `<p class="upload-problem" role="alert">${esc(s.problem)}</p>` : hostLine()}
-         <p class="helper">The file is compressed in your browser, fingerprinted (SHA-256) and sent through the workspace database to the host, which deletes its copy after scoring. Results are shared with every investigator.</p>`;
+         <p class="helper">The file is compressed in your browser, fingerprinted (SHA-256) and sent through the workspace database. The host reads its columns and asks you to confirm them before scoring; it deletes its copy afterwards. Results are shared with every investigator.</p>`;
     dialog.innerHTML = frame('Analyse a transactions file', 'Acurion scores every transaction and adds the strongest leads to the alert queue.', body,
-      `<button class="btn-ghost" data-upload-action="close">Cancel</button><button class="btn-primary" data-upload-action="send" ${!file || s.problem ? 'disabled' : ''}>${icon('upload', 16)}Upload and analyse</button>`, 0);
+      `<button class="btn-ghost" data-upload-action="close">Cancel</button><button class="btn-primary" data-upload-action="send" ${!file || s.problem ? 'disabled' : ''}>${icon('upload', 16)}Upload and check columns</button>`, 0);
     dialog.querySelector('[data-upload-action="send"]:not([disabled])')?.focus();
     return;
   }
   if (s.step === 'sending') {
-    dialog.innerHTML = frame(`Sending ${esc(s.file.name)}`, 'Keep this window open until the file is sent. Analysis then continues on the host.',
+    dialog.innerHTML = frame(`Sending ${esc(s.file.name)}`, 'Keep this window open until the file is sent. The host then reads its columns for you to confirm.',
       '<div class="upload-progress"><div class="upload-track"><i data-progress-bar></i></div><p data-progress-text>Compressing and fingerprinting…</p></div>',
       '<button class="btn-ghost" data-upload-action="abort">Cancel upload</button>', 1);
     renderProgress();
     return;
   }
+  if (s.step === 'columns') {
+    const job = s.job, review = job.columns, n = v => Number(v || 0).toLocaleString('en-GB');
+    const core = COLUMN_FIELDS.filter(f => !f.more), more = COLUMN_FIELDS.filter(f => f.more);
+    const known = review.datasetType !== 'generic' && review.datasetType !== 'custom';
+    if (!job.mine) {
+      dialog.innerHTML = frame(`${esc(job.fileName)} waits for its columns`, `${esc(job.byName)} is asked to confirm what each column is used for. The file is scored once they do.`,
+        `<div class="upload-review" data-readonly>${core.map(f => `<div class="review-row"><div class="review-field"><strong>${esc(f.label)}</strong></div><div class="review-pick"><span class="review-fixed">${esc(review.suggested[f.id] || (review.fixed.includes(f.id) ? 'Set by the layout' : 'Not matched yet'))}</span></div></div>`).join('')}</div>`,
+        '<button class="btn-primary" data-upload-action="close">Close</button>', 2);
+      return;
+    }
+    const problem = reviewProblem(s.picks, review.fixed);
+    const body = `${known ? `<p class="upload-host" data-tone="ok">Recognised as the ${esc(FORMATS[review.datasetType] || review.datasetType)}. Its main columns are set by that layout.</p>` : ''}
+      ${review.message ? `<p class="upload-problem" role="alert">${esc(review.message)}</p>` : ''}
+      <div class="upload-review">${core.map(reviewRow).join('')}</div>
+      <details class="upload-more" ${s.more ? 'open' : ''}><summary>More columns<small>${more.filter(f => s.picks[f.id]).length ? ` · ${more.filter(f => s.picks[f.id]).map(f => f.label).join(', ')}` : ' · currency, banks, payment type, known outcome'}</small></summary><div class="upload-review">${more.map(reviewRow).join('')}</div></details>
+      <p class="upload-problem" role="alert" data-review-problem ${problem ? '' : 'hidden'}>${esc(problem)}</p>
+      ${review.warnings.length ? `<ul class="upload-warnings">${review.warnings.slice(0, 2).map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+      <p class="helper">${n(review.rows)} rows${review.rowsEstimated ? ' (about)' : ''} · ${review.columns.length} columns · nothing is scored until you confirm.</p>`;
+    dialog.innerHTML = frame(`Confirm the columns in ${esc(job.fileName)}`, 'Check what each column is used for. Matches by name are filled in; change any that are wrong.', body,
+      `<button class="btn-ghost" data-upload-action="cancel-job">Cancel upload</button><button class="btn-primary" data-upload-action="confirm" ${problem ? 'disabled' : ''}>${icon('arrow', 16)}Confirm and analyse</button>`, 2);
+    (dialog.querySelector('.review-chip[data-tone=needed], .review-chip[data-tone=check]')?.closest('.review-row')?.querySelector('select') || dialog.querySelector('[data-upload-action="confirm"]:not([disabled])'))?.focus();
+    return;
+  }
   if (s.step === 'analysing') {
-    const job = s.job, status = job?.status || 'queued';
+    const job = s.job, status = job?.status || 'queued', reviewed = !!job?.columns;
     const order = ['queued', 'received', 'analysing'], at = Math.max(0, order.indexOf(status));
-    const stages = [['Sent to the workspace', 'queued'], ['Received by the Acurion host', 'received'], [job?.progress?.note && status === 'analysing' ? job.progress.note : 'Scoring every transaction', 'analysing']];
-    dialog.innerHTML = frame(`Analysing ${esc(job?.fileName || s.file?.name || 'your file')}`, 'You can close this window. The header island tells you when the results are ready.',
+    const stages = reviewed
+      ? [['Columns confirmed, waiting for the host'], ['Received by the Acurion host'], [job?.progress?.note && status === 'analysing' ? job.progress.note : 'Scoring every transaction']]
+      : [['Sent to the workspace'], ['The host is reading the columns']];
+    dialog.innerHTML = frame(reviewed ? `Analysing ${esc(job?.fileName || s.file?.name || 'your file')}` : `Reading ${esc(job?.fileName || s.file?.name || 'your file')}`,
+      reviewed ? 'You can close this window. The header island tells you when the results are ready.' : 'The host reads the file’s columns first and asks you to confirm them. You can close this window; the header island brings you back.',
       `<ol class="upload-stages">${stages.map(([label], i) => `<li data-state="${i < at ? 'done' : i === at ? 'current' : 'next'}">${esc(label)}</li>`).join('')}</ol>${status === 'queued' ? hostLine() : ''}`,
-      `${status === 'queued' && (job?.mine ?? true) ? '<button class="btn-ghost" data-upload-action="cancel-job">Cancel upload</button>' : ''}<button class="btn-primary" data-upload-action="close">Close</button>`, 2);
+      `${status === 'queued' && (job?.mine ?? true) ? '<button class="btn-ghost" data-upload-action="cancel-job">Cancel upload</button>' : ''}<button class="btn-primary" data-upload-action="close">Close</button>`, reviewed ? 3 : 2);
     return;
   }
   if (s.step === 'done') {
@@ -142,7 +234,7 @@ function render() {
        <p class="helper">${sum.start ? `${formatDateTime(sum.start)} to ${formatDateTime(sum.end)}` : 'Dates not recorded'}${sum.datasetType ? ` · ${esc(FORMATS[sum.datasetType] || sum.datasetType)}` : ''} · Scored by ${esc(sum.model || 'the Acurion core model')}${sum.trust ? `, fit for this file: ${esc(sum.trust)}` : ''}.</p>
        ${evaluation}
        ${sum.warnings?.length ? `<ul class="upload-warnings">${sum.warnings.slice(0, 2).map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}`,
-      `<button class="btn-ghost" data-upload-action="again">Upload another</button>${sum.networksWritten ? `<a class="btn-ghost" href="graph.html?upload=${encodeURIComponent(job.id)}">${icon('graph', 16)}View networks</a>` : ''}<a class="btn-primary" href="alerts.html?source=${encodeURIComponent(job.id)}">${icon('alerts', 16)}Open ${n(sum.alertsWritten)} alerts</a>`, 3);
+      `<button class="btn-ghost" data-upload-action="again">Upload another</button>${sum.networksWritten ? `<a class="btn-ghost" href="graph.html?upload=${encodeURIComponent(job.id)}">${icon('graph', 16)}View networks</a>` : ''}<a class="btn-primary" href="alerts.html?source=${encodeURIComponent(job.id)}">${icon('alerts', 16)}Open ${n(sum.alertsWritten)} alerts</a>`, 4);
     return;
   }
   const message = s.job ? describeUpload(s.job) : s.error;

@@ -13,8 +13,13 @@ Firebase paths (the website reads them; its rules let only this bridge write the
   hostDesk/command       Start or Pause, written by a reviewer or admin on the website
   hostDesk/lastCommand   the bridge's answer to the last command
   uploadJobs/{id}        an uploaded dataset: the website creates it, the bridge reports progress and results
-  uploadFiles/{id}/cNNN  the uploaded file, gzip-compressed and base64-encoded in chunks; deleted once read
+  uploadFiles/{id}/cNNN  the uploaded file, gzip-compressed and base64-encoded in chunks; deleted once analysed
   alerts, transactions, networkReviews   an upload's results (keys start with "up-"; K7's start with "k7-")
+
+An upload is never scored unseen. The bridge first asks the batch API how the file's columns map to Acurion's
+fields (POST /api/columns), writes that to uploadJobs/{id}/host/columns and sets the status to "columns". The
+uploader confirms or corrects the mapping on the website (uploadJobs/{id}/mapping, status back to "queued"),
+and only then is the file sent to POST /api/v1/jobs with that mapping.
 
 Run it on the computer that runs K7 and the batch API, with the same Firebase key K7 uses:
 
@@ -30,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import csv
 import gzip
 import hashlib
 import json
@@ -48,14 +54,24 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 LOG = logging.getLogger("acurion.bridge")
 SERVER_TIME = {".sv": "timestamp"}
 
 COMMAND_MAX_AGE_S = 60          # a Start or Pause older than this is never carried out
 HEARTBEAT_S = 5                 # status is rewritten at least this often, so the website knows the host is alive
 UPLOAD_ABANDONED_S = 30 * 60    # an upload still "uploading" after this long is cleared
+COLUMNS_WAIT_S = 24 * 3600      # an upload whose columns are not confirmed within this long is cleared
+RECEIVED_STUCK_S = 10 * 60      # a job left "received" this long (the bridge was stopped mid-way) is taken again
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+PROFILE_ROWS = 200              # rows read for each column's kind and sample values in the column review
+MAX_PROFILE_COLUMNS = 80
+
+# Acurion's fields, as the batch API names them (acurion/schema.py CANONICAL_FIELDS). The mapping the uploader
+# confirms may only name these.
+FIELDS = ("transaction_id", "sender", "receiver", "amount", "timestamp", "time_of_day", "amount_received",
+          "payment_currency", "receiving_currency", "payment_format", "sender_bank", "receiver_bank", "label")
+FIELD_LABELS = {"sender": "sender", "receiver": "receiver", "amount": "amount", "timestamp": "date and time"}
 
 # How much of an upload's result is copied to Firebase. The website reads the last 2,000 records of each
 # list (ordered by key), so one upload stays well inside that.
@@ -104,6 +120,102 @@ def safe_key(text: str) -> str:
 def short_reason(text: str, limit: int = 300) -> str:
     text = " ".join(str(text).split())
     return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def clean_mapping(value: Any) -> dict:
+    """The uploader's confirmed mapping: {field: column name, or "" for "not in this file"}, only known fields,
+    plus date_order ("day_first" or "month_first") when the date column could be read both ways."""
+    if not isinstance(value, dict):
+        return {}
+    mapping = {field: str(column)[:200] for field, column in value.items() if field in FIELDS and isinstance(column, str)}
+    if value.get("date_order") in ("day_first", "month_first"):
+        mapping["date_order"] = value["date_order"]
+    return mapping
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Column review: what each column looks like, from the file's first rows
+# ---------------------------------------------------------------------------------------------------------
+
+_DATE = re.compile(r"^(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.](\d{4}|\d{2}))([ T].*)?$")
+_DMY = re.compile(r"^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4}|\d{2})(?=$|[ T])")
+_TIME = re.compile(r"^\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?\s*([AaPp]\.?[Mm]\.?)?$")
+
+
+def date_order(values: list) -> Optional[str]:
+    """For dates written 03/09/2026: "day_first" or "month_first" when some value settles it, "ambiguous" when
+    none does (the review then asks), None for other date forms."""
+    parts = [m.groups()[:2] for m in (_DMY.match(v) for v in values) if m]
+    if not parts:
+        return None
+    if any(int(first) > 12 for first, _ in parts):
+        return "day_first"
+    if any(int(second) > 12 for _, second in parts):
+        return "month_first"
+    return "ambiguous"
+
+
+def is_number(text: str) -> bool:
+    cleaned = re.sub(r"[\s,£$€¥₹()]", "", text)
+    if cleaned in ("", "-", "+", "."):
+        return False
+    try:
+        float(cleaned)
+        return True
+    except ValueError:
+        return False
+
+
+def column_kind(values: list) -> tuple[str, float]:
+    """("number" | "date" | "time" | "text" | "empty", share of distinct values) for one column's sample."""
+    values = [v for v in values if v]
+    if not values:
+        return "empty", 0.0
+    share = lambda test: sum(1 for v in values if test(v)) / len(values)  # noqa: E731
+    distinct = len(set(values)) / len(values)
+    if share(is_number) >= 0.9:
+        return "number", distinct
+    if share(lambda v: bool(_DATE.match(v))) >= 0.9:
+        return "date", distinct
+    if share(lambda v: bool(_TIME.match(v))) >= 0.9:
+        return "time", distinct
+    return "text", distinct
+
+
+def profile_columns(path: Path, names: list, rows: int = PROFILE_ROWS) -> list:
+    """For each column the batch API found: its name, kind, distinct share and up to three sample values.
+
+    `names` are the API's column names (duplicates renamed as pandas does, e.g. "Account.1"); the file's own
+    header lines up with them by position, or by name when the counts differ.
+    """
+    with open(path, "r", encoding="utf-8-sig", errors="replace", newline="") as handle:
+        first = handle.readline()
+        delimiter = max(",;\t|", key=first.count)
+        handle.seek(0)
+        reader = csv.reader(handle, delimiter=delimiter)
+        header = [cell.strip() for cell in next(reader, [])]
+        table = []
+        for record in reader:
+            if len(table) >= rows:
+                break
+            if any(cell.strip() for cell in record):
+                table.append([cell.strip() for cell in record])
+    profiles = []
+    for index, name in enumerate(names[:MAX_PROFILE_COLUMNS]):
+        position = index if len(header) == len(names) else next((i for i, h in enumerate(header) if h == name), None)
+        values = [row[position] for row in table if position is not None and position < len(row)]
+        kind, distinct = column_kind(values)
+        samples: list = []
+        for value in values:
+            if value and value[:40] not in samples:
+                samples.append(value[:40])
+            if len(samples) == 3:
+                break
+        profile = {"name": name, "kind": kind, "distinct": round(distinct, 2), "samples": samples}
+        if kind == "date":
+            profile["dateOrder"] = date_order(values)
+        profiles.append(given(profile))
+    return profiles
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -466,13 +578,15 @@ class Bridge:
         for job_id, job in jobs.items():
             if not isinstance(job, dict):
                 continue
-            status = job.get("status")
+            status, host = job.get("status"), job.get("host") or {}
             if status == "uploading" and now - int(job.get("createdAt") or now) > UPLOAD_ABANDONED_S * 1000:
                 self.fail_upload(job_id, "abandoned", "The upload did not finish, so it was cleared. Upload the file again.")
-            elif status == "cancelled" and not job.get("host", {}).get("cleared"):
+            elif status == "columns" and now - int((host.get("columns") or {}).get("askedAt") or now) > COLUMNS_WAIT_S * 1000:
+                self.fail_upload(job_id, "unconfirmed", "The columns were not confirmed within a day, so the upload was cleared. Upload the file again.")
+            elif status == "cancelled" and not host.get("cleared"):
                 self.db.delete(f"uploadFiles/{job_id}")
                 self.db.update(f"uploadJobs/{job_id}", {"host/cleared": True})
-            elif status == "queued":
+            elif status == "queued" or (status == "received" and now - int(host.get("receivedAt") or now) > RECEIVED_STUCK_S * 1000):
                 waiting.append((int(job.get("createdAt") or 0), job_id, job))
         if not waiting:
             return None
@@ -509,20 +623,61 @@ class Bridge:
         path.write_bytes(raw)
         return path
 
+    def read_columns(self, path: Path, job: dict, mapping: dict) -> dict:
+        """How the batch API maps the file's columns to Acurion's fields, with the uploader's choices applied."""
+        fields = {"mapping": json.dumps(mapping)} if mapping else {}
+        code, answer = self.api.upload("/api/columns", fields, path, str(job.get("fileName")), timeout=180)
+        if code == 404:
+            raise UploadProblem("no_columns_api", "The batch API on the host has no /api/columns. Update Acurion on the host.")
+        if code != 200 or not isinstance(answer, dict):
+            raise UploadProblem("refused", detail_of(answer))
+        names = [str(c) for c in answer.get("columns") or []]
+        suggested = {f: c for f, c in (answer.get("suggested_mapping") or {}).items() if f in FIELDS and isinstance(c, str) and c}
+        return given({
+            "datasetType": answer.get("dataset_type") or "generic", "rows": answer.get("rows"),
+            "rowsEstimated": bool(answer.get("rows_estimated")), "columns": profile_columns(path, names),
+            "suggested": suggested, "fixed": [f for f in answer.get("fixed_fields") or [] if f in FIELDS],
+            "missing": [f for f in answer.get("missing_required") or [] if f in FIELDS],
+            "alternatives": {f: list(c) for f, c in (answer.get("alternatives") or {}).items() if f in FIELDS and c},
+            "warnings": [short_reason(w, 400) for w in answer.get("warnings") or []][:4],
+        })
+
+    def ask_columns(self, job_id: str, review: dict, confirmed: bool) -> None:
+        """Hand the file back to the uploader: the website shows the review and writes the confirmed mapping."""
+        missing = [FIELD_LABELS.get(f, f) for f in review.get("missing") or []]
+        message = f"Still needed: {', '.join(missing)}. Choose a column for each." if confirmed and missing else None
+        LOG.info("Upload %s: waiting for the uploader to confirm the columns%s", job_id,
+                 f" (missing {', '.join(missing)})" if missing else "")
+        self.db.update(f"uploadJobs/{job_id}", {"status": "columns", "host/columns": given({**review, "askedAt": SERVER_TIME, "message": message}),
+                                               "host/progress": {"note": "Waiting for the uploader to confirm the columns"}})
+
     def process_upload(self, job_id: str, job: dict) -> None:
         self.busy_job = job_id
         folder = None
         try:
+            if self.api is None:
+                raise UploadProblem("unavailable", "Upload scoring is not set up on this host.")
             self.db.update(f"uploadJobs/{job_id}", {"status": "received", "host/receivedAt": SERVER_TIME,
                                                    "host/progress": {"note": "Received by the Acurion host"}})
             path = self.receive_file(job_id, job)
             folder = path.parent
+            # The review: the first time through, the uploader is always asked. Once asked (host/columns exists),
+            # a job queued again carries the confirmed mapping; if a required field is still unmatched, ask again.
+            confirmed = bool((job.get("host") or {}).get("columns"))
+            mapping = clean_mapping(job.get("mapping")) if confirmed else {}
+            order = mapping.pop("date_order", None)
+            review = self.read_columns(path, job, mapping)
+            if not confirmed or review.get("missing"):
+                self.ask_columns(job_id, review, confirmed)
+                return
             self.db.delete(f"uploadFiles/{job_id}")
             self.db.update(f"uploadJobs/{job_id}", {"host/cleared": True})
-            if self.api is None:
-                raise UploadProblem("unavailable", "Upload scoring is not set up on this host.")
-            code, answer = self.api.upload("/api/v1/jobs", {"kind": "analyze", "model_set": "default",
-                                                            "source_timezone": "UTC"}, path, str(job.get("fileName")))
+            fields = {"kind": "analyze", "model_set": "default", "source_timezone": "UTC"}
+            if mapping:
+                fields["mapping"] = json.dumps(mapping)
+            if order:
+                fields["day_first"] = "true" if order == "day_first" else "false"
+            code, answer = self.api.upload("/api/v1/jobs", fields, path, str(job.get("fileName")))
             path.unlink(missing_ok=True)
             if code not in (200, 201, 202) or not isinstance(answer, dict) or not answer.get("job_id"):
                 raise UploadProblem("refused", detail_of(answer))

@@ -39,7 +39,7 @@ What the rules do:
 | `auditLogs/{id}` | Verified users | Append only, signed with the writer's own user ID |
 | `hostDesk/status`, `hostDesk/lastCommand` | Verified users | Never (the host bridge writes them) |
 | `hostDesk/command` | Verified users | Reviewer or admin: `start` or `stop`, stamped with server time |
-| `uploadJobs/{id}` | Verified users | Created once by its uploader; afterwards the uploader can only move it to `queued` or `cancelled` |
+| `uploadJobs/{id}` | Verified users | Created once by its uploader; afterwards the uploader can only move it to `queued` or `cancelled`, and answer the column review (`mapping`, while the status is `columns`). Everything else is fixed, and `host/*` is written only by the bridge |
 | `uploadFiles/{id}/cNNN` | Nobody | The uploader, once per chunk, while the job is `uploading` (at most 700 KB per chunk, 300 chunks) |
 | `caseWorkspaces/{team}` | Analysts and up | Encrypted payload only; the version must rise by exactly 1. The vault is created once by a reviewer or admin |
 | `roles/{uid}` | That user only | Never (set with `set_role.py`) |
@@ -58,6 +58,10 @@ In **Rules** › **Rules Playground**, simulate as an authenticated user with `e
 | The same command, after `set_role.py ... --role reviewer` for that UID | Allowed |
 | Read `/uploadFiles` | Denied |
 | The same read, simulated with `email_verified: false` | Denied |
+| Set `/uploadJobs/<a job whose by is that uid and status is columns>/mapping/sender` to `"Acct Holder"` | Allowed |
+| The same, as a different uid, or set `/uploadJobs/<that job>/fileName` | **Denied** |
+
+**Republish the rules whenever `firebase/database.rules.json` changes in the repository.** The 16 Nov version adds the column review (`mapping`, status `columns`); without it, confirming a review on the website is denied.
 
 ## 2. Create an admin key (keep it private)
 

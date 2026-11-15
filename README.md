@@ -25,7 +25,7 @@ VITE_DEMO_MODE=true npm run dev
 | --- | --- | --- |
 | Alerts | Rule-engine alerts on invented sample customers | Acurion K7's live alerts, alerts from uploaded datasets, and rule alerts |
 | Acurion K7 | Shown, with a sign-in prompt | Start and Pause (reviewers and admins); progress and newest alerts in the header island and on Overview |
-| Upload dataset | Sign-in prompt | Upload a CSV; the host scores it and adds its alerts and networks for everyone |
+| Upload dataset | Sign-in prompt | Upload a CSV, confirm what each column is used for, and the host scores it and adds its alerts and networks for everyone |
 | Storage | Encrypted case workspace on this device | Firebase project `acurion-2bd21`; cases as one encrypted team record |
 
 Model scores are rankings from 0 to 1, never probabilities or percentages. The case workspace starts with invented sample customers and counterparties so every feature can be shown.
@@ -43,7 +43,7 @@ Model scores are rankings from 0 to 1, never probabilities or percentages. The c
 | System status (`system.html`) | Platform services (K7 and upload scoring state), source checks, dataset field coverage, demo reset |
 | Sign-in pages | Email, Google and GitHub sign-in, registration, verification, password reset |
 
-Every row and card that opens a record can be clicked anywhere on it, and record panels close with ×, Escape or a click outside. The black **K7 capsule** in the header springs open into a live panel when clicked, and briefly into a notification when K7 raises an alert or your upload is analysed.
+Every row and card that opens a record can be clicked anywhere on it, and record panels close with ×, Escape or a click outside. The black **K7 capsule** in the header springs open into a live panel when clicked, and briefly into a notification when K7 raises an alert, when your upload needs its columns confirmed, or when it is analysed.
 
 ## Security
 
