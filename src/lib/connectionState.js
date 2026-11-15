@@ -1,6 +1,6 @@
 // Connection refers to source reads, not whether an analyst write is permitted.
 export function connectionState(records,{demo=false,online=true,transport}={}){
-  if(demo)return {state:'demo',label:'Demo',detail:'Fictional demo records. Firebase is not being queried.'};
+  if(demo)return {state:'demo',label:'Demo',detail:'Demo workspace with the IBM AML benchmark model run.'};
   if(!online)return {state:'disconnected',label:'Disconnected',detail:'Your browser is offline. Reconnect and check the data sources.'};
   if(transport===false)return {state:'disconnected',label:'Disconnected',detail:'The Firebase Realtime Database connection is unavailable. Reconnect, then check the sources in System status.'};
   if(transport===null)return {state:'checking',label:'Checking…',detail:'Waiting for the Firebase Realtime Database connection.'};

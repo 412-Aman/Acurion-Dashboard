@@ -8,11 +8,11 @@ import { buildCaseReport,createCaseFromAlert,attachGraphEvidence } from '../src/
 import { seedCompliance } from '../src/data/complianceData.js';
 import { withTimeout,describeDataError } from '../src/lib/dataStatus.js';
 const customer=seedCompliance().customers[0];
-test('live data does not invent model scores, dates, currency, identities or graph explanations',()=>{
+test('live data does not invent model scores, dates, currency, identities or reasons',()=>{
   const tx=normalizeTransaction('IEEE-1',{sourceDataset:'IEEE_CIS',isFraud:1,payerEmailDomain:'example.com',amount:20,transactionTime:360});
   assert.equal(tx.riskScore,null);assert.equal(tx.timestamp,null);assert.equal(tx.currency,null);assert.equal(tx.fromAccount,'Not supplied');assert.equal(tx.decision,'unassessed');assert.equal(tx.dataQuality.length,3);
   const alert=normalizeAlert('A1',{reason:'Review',transactionId:'T1'});
-  assert.equal(alert.gnnExplanation,null);assert.equal(alert.shapExplanation,null);assert.equal(alert.riskScore,null);assert.equal(alert.suspiciousAccount,'Not supplied');assert.equal(alert.timestamp,null);
+  assert.deepEqual(alert.reasons,[]);assert.equal(alert.uploadId,'');assert.equal(alert.shapExplanation,null);assert.equal(alert.riskScore,null);assert.equal(alert.suspiciousAccount,'Not supplied');assert.equal(alert.timestamp,null);
 });
 test('canonical and existing transaction schemas preserve source values and score scales',()=>{
   const tx=normalizeTransaction('T1',{event_id:'E1',sender_account_id:'C1',receiver_account_id:'C2',amount:123,currency:'AED',timestamp:'2026-10-01T12:00:00Z',riskScore:80,decision:'FLAG'});

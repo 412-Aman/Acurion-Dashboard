@@ -10,14 +10,14 @@ test('unverified access failures direct users to verify instead of suggesting ad
     assert.equal(detail.href,'verify-email.html');assert.match(detail.message,/email is not verified/);assert.equal(detail.retry,false);
   }
 });
-test('a verified account denied a read gets the exact source and approval steps without claiming a known cause',()=>{
+test('a verified account denied a read gets the exact source and the rules to publish, without claiming a known cause',()=>{
   const detail=dataErrorDetails({code:'database/permission-denied'},{user:{emailVerified:true},path:'auditLogs'});
-  assert.match(detail.message,/\/auditLogs/);assert.match(detail.message,/approvedUsers/);assert.match(detail.message,/read permission/);
+  assert.match(detail.message,/\/auditLogs/);assert.match(detail.message,/database\.rules\.json/);assert.doesNotMatch(detail.message,/approvedUsers/);assert.match(detail.message,/read permission/);
   assert.doesNotMatch(detail.message,/not signed in|email is not verified/);assert.equal(detail.href,'system.html#access-help');
 });
 test('permission-denied review writes differ from uncertain writes on a timeout',()=>{
   const denied=dataErrorDetails({code:'PERMISSION_DENIED'},{operation:'write',user:{emailVerified:true}});
-  assert.equal(denied.title,'Review was not saved');assert.match(denied.message,/both the alert and audit paths/);assert.equal(denied.retry,false);
+  assert.equal(denied.title,'Review was not saved');assert.match(denied.message,/read-only \(viewer\)/);assert.equal(denied.retry,false);
   const timeout=dataErrorDetails({code:'data/timeout'},{operation:'write'});
   assert.equal(timeout.title,'Save could not be confirmed');assert.match(timeout.message,/before saving again/);assert.equal(timeout.retry,false);
 });

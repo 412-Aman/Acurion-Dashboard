@@ -9,7 +9,7 @@ const alertFields=[
   ['ruleScore','Rule points','Rule engine'],['policyVersion','Policy version','Rule engine'],['ruleIds','Rule references','Rule engine'],
   ['evaluatedAt','Evaluation time','Scoring pipeline'],['featureWindow','Feature time window','Scoring pipeline'],
   ['signals.anomaly','Anomaly signal','Model pipeline'],['signals.supervised','Supervised signal','Model pipeline'],['signals.gnn','GNN signal','Model pipeline'],['signals.graph','Graph signal','Model pipeline'],
-  ['shapExplanation','SHAP explanation','Model pipeline'],['gnnExplanation','GNN explanation','Model pipeline'],
+  ['shapExplanation','Reason contributions','Model pipeline'],['reasons','Plain-language reasons','Model pipeline'],['uploadId','Uploaded dataset','Upload scoring'],
 ];
 const sourceKey={id:'transactionId',amount:'amount',currency:'paymentCurrency','signals.anomaly':'anomalyScore','signals.supervised':'supervisedScore','signals.gnn':'gnnScore','signals.graph':'graphRiskScore'};
 function supplied(value){return value!=null&&value!==''&&value!=='Not supplied'&&(!Array.isArray(value)||value.length>0)&&(!(typeof value==='object'&&!Array.isArray(value))||Object.keys(value).length>0);}

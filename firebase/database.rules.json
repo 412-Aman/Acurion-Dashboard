@@ -1,0 +1,148 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "roles": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+    "transactions": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      ".write": false,
+      ".indexOn": [
+        "timestamp"
+      ]
+    },
+    "accounts": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      ".write": false
+    },
+    "graphData": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      ".write": false
+    },
+    "networkReviews": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      ".write": false
+    },
+    "alerts": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      "$alertId": {
+        ".write": false,
+        "status": {
+          ".write": "data.parent().exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+          ".validate": "newData.isString() && newData.val().matches(/^(open|assigned|investigating|escalated|closed)$/) && (newData.val() !== 'closed' || root.child('roles').child(auth.uid).val().matches(/^(reviewer|admin)$/))"
+        },
+        "owner": {
+          ".write": "data.parent().exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "disposition": {
+          ".write": "data.parent().exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+          ".validate": "newData.isString() && newData.val().matches(/^(|no_further_action|escalated_to_case)$/)"
+        },
+        "analystNote": {
+          ".write": "data.parent().exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+          ".validate": "newData.isString() && newData.val().length >= 10 && newData.val().length <= 4000"
+        },
+        "reviewedAt": {
+          ".write": "data.parent().exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+          ".validate": "newData.isString() && newData.val().length <= 40"
+        },
+        "reviewedBy": {
+          ".write": "data.parent().exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+          ".validate": "newData.val() === auth.uid"
+        }
+      }
+    },
+    "auditLogs": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      ".indexOn": [
+        "timestamp"
+      ],
+      "$logId": {
+        ".write": "!data.exists() && newData.exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+        ".validate": "newData.hasChildren(['timestamp', 'action', 'actor']) && newData.child('actor').val() === auth.uid && newData.child('action').isString() && newData.child('action').val().length <= 200"
+      }
+    },
+    "hostDesk": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      "status": {
+        ".write": false
+      },
+      "lastCommand": {
+        ".write": false
+      },
+      "command": {
+        ".write": "auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val().matches(/^(reviewer|admin)$/)",
+        ".validate": "newData.hasChildren(['id', 'action', 'by', 'at']) && newData.child('id').isString() && newData.child('id').val().length <= 64 && newData.child('action').isString() && newData.child('action').val().matches(/^(start|stop)$/) && newData.child('by').val() === auth.uid && newData.child('at').val() === now"
+      }
+    },
+    "uploadJobs": {
+      ".read": "auth != null && auth.token.email_verified === true",
+      ".indexOn": [
+        "createdAt"
+      ],
+      "$jobId": {
+        ".write": "(!data.exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer') || (data.exists() && newData.exists() && auth != null && auth.token.email_verified === true && data.child('by').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['by', 'byName', 'fileName', 'bytes', 'packedBytes', 'chunks', 'sha256', 'status', 'createdAt']) && newData.child('by').val() === auth.uid && (data.exists() ? (newData.child('createdAt').val() === data.child('createdAt').val() && newData.child('fileName').val() === data.child('fileName').val() && newData.child('bytes').val() === data.child('bytes').val() && newData.child('chunks').val() === data.child('chunks').val() && newData.child('sha256').val() === data.child('sha256').val() && newData.child('packedBytes').val() === data.child('packedBytes').val() && newData.child('byName').val() === data.child('byName').val() && ((data.child('status').val() === 'uploading' && newData.child('status').val().matches(/^(queued|cancelled)$/)) || (data.child('status').val() === 'queued' && newData.child('status').val() === 'cancelled'))) : (newData.child('status').val() === 'uploading' && newData.child('createdAt').val() === now))",
+        "by": {
+          ".validate": "newData.isString()"
+        },
+        "byName": {
+          ".validate": "newData.isString() && newData.val().length <= 120"
+        },
+        "fileName": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200"
+        },
+        "bytes": {
+          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 104857600"
+        },
+        "packedBytes": {
+          ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 104857600"
+        },
+        "chunks": {
+          ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 300"
+        },
+        "columns": {
+          ".validate": "newData.isString() && newData.val().length <= 4000"
+        },
+        "status": {
+          ".validate": "newData.isString()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "sha256": {
+          ".validate": "newData.isString() && newData.val().matches(/^[0-9a-f]{64}$/)"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "uploadFiles": {
+      "$jobId": {
+        "$chunk": {
+          ".write": "!data.exists() && newData.exists() && auth != null && auth.token.email_verified === true && root.child('uploadJobs').child($jobId).child('by').val() === auth.uid && root.child('uploadJobs').child($jobId).child('status').val() === 'uploading'",
+          ".validate": "newData.isString() && newData.val().length <= 700000 && $chunk.matches(/^c[0-9]{3}$/)"
+        }
+      }
+    },
+    "caseWorkspaces": {
+      "$team": {
+        ".read": "auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+        "vault": {
+          ".write": "!data.exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val().matches(/^(reviewer|admin)$/)",
+          ".validate": "newData.hasChildren(['salt', 'iterations', 'check', 'createdBy']) && newData.child('createdBy').val() === auth.uid && newData.child('iterations').val() >= 100000"
+        },
+        "payload": {
+          ".write": "auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
+          ".validate": "newData.hasChildren(['iv', 'ct', 'version', 'updatedBy', 'updatedAt']) && newData.child('updatedBy').val() === auth.uid && newData.child('version').isNumber() && ((!data.exists() && newData.child('version').val() === 1) || (data.exists() && newData.child('version').val() === data.child('version').val() + 1))"
+        }
+      }
+    }
+  }
+}

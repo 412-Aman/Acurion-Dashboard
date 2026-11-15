@@ -38,7 +38,8 @@ export function installTooltips() {
   document.addEventListener('focusin',event=>{dismissed=undefined;const node=target(event.target);if(node?.matches(':focus-visible'))show(node,true);else hide();});
   document.addEventListener('focusout',event=>{if(target(event.target))hide();});
   document.addEventListener('keydown',event=>{if(event.key==='Escape'&&trigger){dismissed=trigger;hide();}});
-  document.addEventListener('pointerdown',event=>{if(!tip.contains(event.target))hide();});
+  document.addEventListener('pointerdown',event=>{if(!tip.contains(event.target)&&!event.target.closest?.('.help-tip'))hide();});
+  document.addEventListener('click',event=>{const node=event.target.closest?.('.help-tip[data-tooltip]');if(!node)return;event.preventDefault();if(trigger===node&&!tip.hidden){dismissed=node;hide();}else{dismissed=undefined;show(node,true);}});
   document.addEventListener('scroll',hide,true);window.addEventListener('resize',hide);
   window.addEventListener('pagehide',hide);
 }

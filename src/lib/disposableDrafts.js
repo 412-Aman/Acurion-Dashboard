@@ -2,9 +2,9 @@
 export const DRAFT_KEY = 'acurion.disposable-drafts.v1';
 export function seedDrafts() {
   return { version:1, items:[
-    { id:'sample-outline', name:'Customer review outline', size:'Working note', body:'Fictional example: summarise the customer profile, expected activity and grounds for review.' },
-    { id:'sample-scenario', name:'Scenario tuning notes', size:'Working note', body:'Fictional example: compare threshold and repeated transfer scenarios before approving a policy.' },
-    { id:'sample-format', name:'Report formatting trial', size:'Working note', body:'Fictional example: prepare a narrative outline. This is not an STR, SAR or an investigation record.' },
+    { id:'sample-outline', name:'Customer review outline', size:'Working note', body:'Summarise the customer profile, expected activity and grounds for review.' },
+    { id:'sample-scenario', name:'Scenario tuning notes', size:'Working note', body:'Compare threshold and repeated transfer scenarios before approving a policy.' },
+    { id:'sample-format', name:'Report formatting trial', size:'Working note', body:'Prepare a narrative outline before it moves into the case. This is not an STR, SAR or an investigation record.' },
   ], trash:[] };
 }
 export function readDrafts(storage = localStorage) {

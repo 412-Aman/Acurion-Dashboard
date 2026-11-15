@@ -5,13 +5,13 @@ export function seedCompliance() {
   return {
     schemaVersion: 1, policy: { ...defaultPolicy },
     customers: [
-      { id: 'DEMO-001', name: 'Demo Customer One', type: 'Individual', country: 'AE', currency: 'AED', monthlyIncome: 18000, expectedMonthly: 35000, threshold: 50000, pep: 'none', relatedTo: '', kyc: 'verified', sourceOfFunds: 'Employment', identifier: 'DEMO-ID-001', dob: '1988-05-02', createdAt: ago(120), reviewedAt: ago(60) },
-      { id: 'DEMO-002', name: 'Demo Public Official', type: 'Individual', country: 'AE', currency: 'AED', monthlyIncome: 45000, expectedMonthly: 100000, threshold: 50000, pep: 'foreign', relatedTo: '', kyc: 'enhanced_review', sourceOfFunds: 'Public office salary', identifier: 'DEMO-ID-002', dob: '1970-01-01', createdAt: ago(90), reviewedAt: ago(45) },
-      { id: 'DEMO-003', name: 'Demo Trading Company', type: 'Company', country: 'AE', currency: 'AED', monthlyIncome: 200000, expectedMonthly: 500000, threshold: 150000, pep: 'associate', relatedTo: 'DEMO-002', kyc: 'pending', sourceOfFunds: 'Trading revenue', identifier: 'DEMO-LIC-003', createdAt: ago(10), reviewedAt: ago(10) },
+      { id: 'CUST-1001', name: 'Layla Haddad', type: 'Individual', country: 'AE', currency: 'AED', monthlyIncome: 18000, expectedMonthly: 35000, threshold: 50000, pep: 'none', relatedTo: '', kyc: 'verified', sourceOfFunds: 'Employment income', identifier: 'PASS-AE-4471-LH', dob: '1988-05-02', createdAt: ago(120), reviewedAt: ago(60) },
+      { id: 'CUST-1002', name: 'Karim Nassar', type: 'Individual', country: 'AE', currency: 'AED', monthlyIncome: 45000, expectedMonthly: 100000, threshold: 50000, pep: 'foreign', relatedTo: '', kyc: 'enhanced_review', sourceOfFunds: 'Public office salary', identifier: 'PASS-LB-2290-KN', dob: '1970-01-14', createdAt: ago(90), reviewedAt: ago(45) },
+      { id: 'CUST-1003', name: 'Qasr Meridian Trading LLC', type: 'Company', country: 'AE', currency: 'AED', monthlyIncome: 200000, expectedMonthly: 500000, threshold: 150000, pep: 'associate', relatedTo: 'CUST-1002', kyc: 'pending', sourceOfFunds: 'General trading revenue', identifier: 'LIC-DXB-883104', createdAt: ago(10), reviewedAt: ago(10) },
     ],
-    counterparties: [{ id: 'DEMO-CP-001', name: 'Demo Designated Entity', identifier: 'DEMO-DESIGNATED-001', country: 'ZZ' }, { id: 'DEMO-CP-002', name: 'Demo Supplier', identifier: 'DEMO-SUPPLIER-002', country: 'AE' }],
-    transactions: [70000, 82000, 65000, 1400, 180000].map((amount, i) => ({ id: `DEMO-TX-${i + 1}`, fromAccount: i === 4 ? 'DEMO-003' : 'DEMO-001', toAccount: i === 2 ? 'DEMO-CP-001' : 'DEMO-CP-002', country: i === 2 ? 'ZZ' : 'AE', currency: 'AED', amount, timestamp: ago(5 - i) })),
-    watchlist: [{ id: 'DEMO-LIST-001', name: 'Demo Designated Entity', aliases: ['Demo Designated Co'], kind: 'sanction', identifier: 'DEMO-DESIGNATED-001', source: 'Synthetic training list', sourceUrl: '', listedAt: ago(20) }],
+    counterparties: [{ id: 'CP-2001', name: 'Tarsis Maritime Holdings', identifier: 'REG-PA-559021', country: 'PA' }, { id: 'CP-2002', name: 'Dunecrest Building Supplies FZE', identifier: 'LIC-SHJ-120447', country: 'AE' }],
+    transactions: [70000, 82000, 65000, 1400, 180000].map((amount, i) => ({ id: `CW-TX-${1001 + i}`, fromAccount: i === 4 ? 'CUST-1003' : 'CUST-1001', toAccount: i === 2 ? 'CP-2001' : 'CP-2002', country: i === 2 ? 'PA' : 'AE', currency: 'AED', amount, channel: i === 3 ? 'Card payment' : 'Wire transfer', timestamp: ago(5 - i) })),
+    watchlist: [{ id: 'WL-0001', name: 'Tarsis Maritime Holdings', aliases: ['Tarsis Marine Co'], kind: 'sanction', identifier: 'REG-PA-559021', source: 'Internal sanctions watchlist', sourceUrl: '', listedAt: ago(20) }],
     findings: [], assessments: [], cases: [], documents: [], audit: [], riskHistory: [], runs: [],
   };
 }

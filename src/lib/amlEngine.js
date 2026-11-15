@@ -56,7 +56,7 @@ export function assessTransaction(tx, customer, history, policy = defaultPolicy,
   for (const hit of screening) {
     if (hit.disposition === 'false_positive') continue;
     if (hit.kind === 'sanction' && hit.disposition === 'confirmed') {
-      add('SANCTION_CONFIRMED', 'Confirmed sanctions match; simulated block', 100); decision = 'block';
+      add('SANCTION_CONFIRMED', 'Confirmed sanctions match; block recommended', 100); decision = 'block';
     } else if (hit.kind === 'adverse_media' && hit.disposition === 'confirmed') add('MEDIA', `${hit.severity || 'Unclassified'} adverse-media finding reviewed by analyst`, 25);
     else if (hit.kind === 'pep' && hit.disposition === 'confirmed') add('PEP_MATCH', 'Confirmed counterparty PEP; enhanced due diligence', 25);
     else if (hit.disposition === 'pending') add('SCREENING_PENDING', 'Potential screening match requires identity review', 20);

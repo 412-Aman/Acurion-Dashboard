@@ -30,7 +30,9 @@ The adapter reads keyed objects from `/transactions` by default. Known raw and s
 
 ## Live alert source
 
-A keyed alert should contain `alertId`, `transactionId`, `accountId`, `timestamp`, `severity`, `decision`, `status`, `reason` and `sourceDataset`. Optional metadata includes `modelVersion`, `policyVersion`, `ruleIds`, `evaluatedAt`, `featureWindow`, `evidenceTransactionIds`, `ruleScore`, `ruleAssessment`, `shapExplanation` and `gnnExplanation`.
+A keyed alert should contain `alertId`, `transactionId`, `accountId`, `timestamp`, `severity`, `decision`, `status`, `reason` and `sourceDataset`. Optional metadata includes `modelVersion`, `policyVersion`, `ruleIds`, `evaluatedAt`, `featureWindow`, `evidenceTransactionIds`, `ruleScore`, `ruleAssessment`, `shapExplanation` (`topFeatures`: `feature` sentence and signed `impact`), `reasons` (plain sentences, strongest first), `uploadId` and `networkId`.
+
+Acurion K7 writes alerts with keys starting `k7-`; the host bridge writes an upload's alerts, transactions and networks with keys starting `up-<upload id>-`. A network record (`networkReviews/{key}`) has `pattern`, `description`, `risk` (0–1), `accounts`, `transactionIds`, `uploadId` and `fileName`. The host's status (`hostDesk/status`), commands (`hostDesk/command`) and uploads (`uploadJobs`, `uploadFiles`) are described in [HOST_SETUP.md](HOST_SETUP.md) and `host/acurion_bridge.py`.
 
 `riskScore` supports 0–1 or 0–100 for compatibility; set `riskScoreScale` to `0-1` or `0-100` in a new producer to remove ambiguity, especially for a value of 1. Do not use a mixed or ambiguous scale in a new producer. Optional `anomalyScore`, `supervisedScore`, `gnnScore` and `graphRiskScore` remain separate signals; they are not summed. Ground-truth labels do not supply scores or decisions. Recommendations are PASS, FLAG or BLOCK; a BLOCK in this app is a recorded/simulated recommendation, not payment enforcement.
 
@@ -48,4 +50,4 @@ Neighborhoods allow up to 3 hops and 100 nodes. Transaction paths use transfer d
 
 ## Model teammate handoff
 
-Supply stable transaction/account IDs, the prediction unit, source dataset/version, model/version, feature schema and ordering, evaluated-at time, feature-window boundaries, documented score scale, quality flags, and actual SHAP/GNN explanation payloads. Keep inference features free of target labels and future events. Training, calibration, evaluation and explanation generation stay with the model team.
+Supply stable transaction/account IDs, the prediction unit, source dataset/version, model/version, feature schema and ordering, evaluated-at time, feature-window boundaries, documented score scale, quality flags, and actual explanation payloads (reason contributions or plain-language reasons). Keep inference features free of target labels and future events. Training, calibration, evaluation and explanation generation stay with the model team.

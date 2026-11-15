@@ -32,7 +32,8 @@ export function normalizeAlert(key, data) {
     evaluatedAt: isoTimestamp(data.evaluatedAt || data.evaluated_at), featureWindow:data.featureWindow || null,
     ruleScore:finiteNumber(data.ruleScore), evidenceTransactionIds:Array.isArray(data.evidenceTransactionIds)?data.evidenceTransactionIds:[],
     ruleAssessment:data.ruleAssessment || null,
-    shapExplanation: data.shapExplanation || null, gnnExplanation: data.gnnExplanation || null,
+    shapExplanation: data.shapExplanation || null,
+    reasons: Array.isArray(data.reasons) ? data.reasons.map(string).filter(Boolean) : [], uploadId: string(data.uploadId), networkId: string(data.networkId),
     signals: { anomaly: finiteNumber(data.anomalyScore), supervised: score(data.supervisedScore,data.supervisedScoreScale), gnn: score(data.gnnScore,data.gnnScoreScale), graph: finiteNumber(data.graphRiskScore) },
   };
 }

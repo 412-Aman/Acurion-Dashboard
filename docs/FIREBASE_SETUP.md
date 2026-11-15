@@ -23,7 +23,7 @@ System status shows the signed-in account's UID, the Realtime Database URL and e
 
 ## Read-only audit access for the current prototype
 
-Use [the read-only rules example](../firebase/database.rules.readonly.example.json) for approved, verified accounts. In **Realtime Database → Data**, add `approvedUsers/<Firebase Authentication UID>: true` for **each** teammate who should read records. Adding only the administrator UID permits only that account. This entry grants record access, not Firebase administrator privileges. Verify the account's email, review the example, and publish it under **Realtime Database → Rules**. The browser cannot edit this approval list. No rules are published automatically. The example also allows optional account and graph enrichment reads; missing data returns an empty result.
+Publish [`firebase/database.rules.json`](../firebase/database.rules.json) as described in [FIREBASE_GO_LIVE.md](FIREBASE_GO_LIVE.md). Every signed-in account with a verified email can read records; there is no approval list. Roles (reviewer, admin, viewer) are set with `firebase/set_role.py`. The browser cannot change roles or rules, and no rules are published automatically.
 
 After publishing, refresh the app and check the audit source. `ready` means audit records were read; `empty` means the authorized path has no records. The rules keep all client writes disabled, so analyst review saving and new audit-event creation remain unavailable until an approved write policy is implemented. Do not fabricate historical audit entries to remove an empty state. This example does not provide immutable institutional audit storage.
 

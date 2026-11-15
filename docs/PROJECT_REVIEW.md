@@ -29,7 +29,7 @@ No server, Firebase rules, payment gateway, scheduled ingestion, database migrat
 | Retention / records | Configurable years, jurisdiction overrides, latest recorded closure/relationship/inspection/judgment-based eligibility and legal holds, sandbox activity export | Verified record-type-specific triggers and source events, append-only audit, server retention enforcement, secure archive and controlled disposal |
 | Professional UI | Neutral charcoal/white/grey across all pages, charts and graph; textual severity and different badge borders, responsive compliance panels | Institutional brand/accessibility review |
 
-The sandbox is stored in localStorage under `acurion.compliance.sandbox.v1`. It is neither encrypted nor immutable. Browser storage can be cleared, edited or exhaust its quota. Do not put real PII, KYC documents or regulated records into it. JSON workspace exports contain all sandbox evidence, including uploaded document content. Case draft exports include document hashes/metadata rather than file bodies.
+The case workspace is encrypted with AES-256-GCM (PBKDF2 passphrase key) and every change is hash-chained; see docs/SECURITY.md.
 
 The rule engine is reusable pure JavaScript (`src/lib/amlEngine.js`). It uses only transactions at or before each evaluated transaction time, within the configured window and currency. Cross-currency comparisons flag for review until a verified conversion exists. An unmatched name does not prove innocence, and a name match never auto-confirms identity. Potential hits flag; a manually confirmed sanctions hit yields only a **simulated** block. The production decision must interpret the actual designation measures and applicable law.
 

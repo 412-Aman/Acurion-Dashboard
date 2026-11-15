@@ -6,15 +6,15 @@ export function validateEvent(event) {
   if(typeof event.timestamp!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(event.timestamp)||!Number.isFinite(Date.parse(event.timestamp)))errors.push('timestamp must be ISO-8601 with an explicit timezone');
   else { const [year,month,day]=event.timestamp.slice(0,10).split('-').map(Number); if(month<1||month>12||day<1||day>new Date(Date.UTC(year,month,0)).getUTCDate())errors.push('timestamp contains an invalid calendar date'); }
   if(!/^[A-Z]{3}$/.test(event.currency||''))errors.push('currency must use a three-letter ISO code');
-  if(event.synthetic!==true)errors.push('Only explicitly synthetic events may be imported into this browser sandbox');
+  if(event.synthetic!==true)errors.push('Only test events marked "synthetic": true can be imported from a file');
   return errors;
 }
 export function canonicalTransaction(event) {
-  return {id:event.event_id,fromAccount:event.sender_account_id,toAccount:event.receiver_account_id,amount:event.amount,currency:event.currency,timestamp:new Date(event.timestamp).toISOString(),country:/^[A-Z]{2}$/.test(event.country||'')?event.country:'',channel:typeof event.transaction_type==='string'?event.transaction_type:'Transfer',sourceDataset:'Synthetic event import',synthetic:true};
+  return {id:event.event_id,fromAccount:event.sender_account_id,toAccount:event.receiver_account_id,amount:event.amount,currency:event.currency,timestamp:new Date(event.timestamp).toISOString(),country:/^[A-Z]{2}$/.test(event.country||'')?event.country:'',channel:typeof event.transaction_type==='string'?event.transaction_type:'Transfer',sourceDataset:'Scenario event import',synthetic:true};
 }
 const identity=tx=>JSON.stringify([tx.fromAccount,tx.toAccount,tx.amount,tx.currency,Date.parse(tx.timestamp)]);
 export function ingestEvents(history,events) {
-  if(!Array.isArray(events)||events.length>1000)throw new Error('Import an array of at most 1,000 synthetic events.');
+  if(!Array.isArray(events)||events.length>1000)throw new Error('Import an array of at most 1,000 events.');
   const records=new Map(history.map(tx=>[tx.id,tx])),accepted=[],rejected=[];
   let duplicates=0;
   events.forEach((event,index)=>{
@@ -28,5 +28,5 @@ export function ingestEvents(history,events) {
 }
 export function scenarioEvents(kind) {
   const amounts=kind==='structuring'?[44000,46000,47000]:[200,300,250,400,350,500];
-  return amounts.map((amount,i)=>({event_id:`SIM-${kind.toUpperCase()}-${i+1}`,timestamp:new Date(Date.parse('2026-10-01T12:00:00Z')+i*30000).toISOString(),sender_account_id:'DEMO-001',receiver_account_id:'DEMO-CP-002',amount,currency:'AED',country:'AE',transaction_type:'Transfer',synthetic:true}));
+  return amounts.map((amount,i)=>({event_id:`SCN-${kind.toUpperCase()}-${i+1}`,timestamp:new Date(Date.parse('2026-10-01T12:00:00Z')+i*30000).toISOString(),sender_account_id:'CUST-1001',receiver_account_id:'CP-2002',amount,currency:'AED',country:'AE',transaction_type:'Transfer',synthetic:true}));
 }

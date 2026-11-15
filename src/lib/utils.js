@@ -18,11 +18,11 @@ export function formatTimeAgo(isoString) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+// Records are shown in UTC so dataset times, model runs and analyst actions line up.
 export function formatDateTime(isoString) {
-  if (!isoString || !Number.isFinite(Date.parse(isoString))) return 'Time not supplied';
-  return new Date(isoString).toLocaleString('en-GB', {
-    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-  });
+  if (!isoString || !Number.isFinite(Date.parse(isoString))) return 'Time not recorded';
+  const date = new Date(isoString), sameYear = date.getUTCFullYear() === new Date().getUTCFullYear();
+  return `${date.toLocaleString('en-GB', { day: '2-digit', month: 'short', ...(sameYear ? {} : { year: 'numeric' }), hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })} UTC`;
 }
 
 export function riskColor(score) {
@@ -50,7 +50,8 @@ export function decisionBadgeClass(decision) {
     default: return 'badge badge-neutral';
   }
 }
-export function formatRisk(score) { return score == null || !Number.isFinite(score) ? 'Not supplied' : `${Math.round(score * 100)}/100`; }
+// Model scores are uncalibrated, so they are shown as 0-1 scores, never as percentages.
+export function formatRisk(score) { return score == null || !Number.isFinite(score) ? 'Not scored' : (Math.floor(score * 1000) / 1000).toFixed(3); }
 
 export function $(selector, root = document) {
   return root.querySelector(selector);

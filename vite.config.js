@@ -1,5 +1,9 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { readFileSync } from 'fs';
+
+// `vite preview` serves the same security headers as production (vercel.json).
+const securityHeaders = Object.fromEntries(JSON.parse(readFileSync(new URL('./vercel.json', import.meta.url), 'utf8')).headers[0].headers.filter(h => h.key !== 'Strict-Transport-Security').map(h => [h.key, h.key === 'Content-Security-Policy' ? h.value.replace('; upgrade-insecure-requests', '') : h.value]));
 
 export default defineConfig({
   plugins: [{
@@ -14,6 +18,7 @@ export default defineConfig({
       },
     },
   }],
+  preview: { headers: securityHeaders },
   resolve: { alias: { "@": resolve(__dirname, "src") } },
   build: {
     rollupOptions: {
