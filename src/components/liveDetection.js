@@ -21,12 +21,16 @@ export function mountLiveDetection(element) {
     const next = [state, controls, busy, message, k7.recent.map(a => a.alertId).join(','), online && k7.total > 0].join('|');
     if (next !== shape) {
       shape = next;
+      // Reviewers always see Start; while it can't be used it stays greyed out and says why.
+      const hint = canStart(status) || canPause(status) ? '' : !online ? 'Available when the Acurion host connects and K7 has loaded.'
+        : ({ 'getting ready': 'Available when K7 has finished loading its payment history.', finished: 'The recording has played through. The host team rebuilds K7’s store to run it again.', failed: 'K7 needs attention on the host computer.' })[k7.state] || 'Available when K7 is running on the host.';
       const action = status.connection === 'signed-out'
         ? `<a class="btn-primary" href="login.html?next=index.html" data-sign-in>${icon('arrow', 16)}Sign in to run K7</a>`
-        : online && controls ? (canPause(status)
+        : controls ? (canPause(status)
           ? `<button class="btn-ghost" data-desk="stop" ${busy ? 'disabled' : ''}>${busy ? 'Pausing…' : 'Pause K7'}</button>`
-          : `<button class="btn-primary" data-desk="start" ${busy || !canStart(status) ? 'disabled' : ''}>${busy ? 'Starting…' : 'Start K7'}</button>`) : '';
-      element.innerHTML = `<div class="live-head"><div><span class="section-kicker">Live detection</span><div class="live-title-row"><h2 id="live-title">Acurion K7</h2><span class="live-state" data-state="${esc(state)}">${esc(state === 'signed-out' ? 'Sign in' : LABEL[state] || 'Offline')}</span></div><p class="live-desc" data-field="desc"></p></div><div class="live-actions">${action}<button class="btn-ghost" data-open-upload>${icon('upload', 16)}Upload dataset</button></div></div>
+          : `<button class="btn-primary" data-desk="start" ${busy || hint ? 'disabled' : ''}${hint ? ' aria-describedby="live-start-hint"' : ''}>${busy ? 'Starting…' : 'Start K7'}</button>`) : '';
+      const actionHint = controls && hint && status.connection !== 'signed-out' ? `<p class="live-start-hint" id="live-start-hint">${esc(hint)}</p>` : '';
+      element.innerHTML = `<div class="live-head"><div><span class="section-kicker">Live detection</span><div class="live-title-row"><h2 id="live-title">Acurion K7</h2><span class="live-state" data-state="${esc(state)}">${esc(state === 'signed-out' ? 'Sign in' : LABEL[state] || 'Offline')}</span></div><p class="live-desc" data-field="desc"></p></div><div class="live-actions">${action}<button class="btn-ghost" data-open-upload>${icon('upload', 16)}Upload dataset</button>${actionHint}</div></div>
         ${online && k7.total > 0 ? `<div class="live-progress"><div class="live-track" role="progressbar" aria-label="Payments checked" aria-valuemin="0" aria-valuemax="${k7.total}" data-field="aria"><i data-field="bar"></i></div><div class="live-progress-meta"><span data-field="checked"></span><span data-field="speed"></span></div></div>
         <dl class="live-stats"><div><dt>Alerts raised</dt><dd data-field="alerts"></dd></div><div><dt>Worth a look</dt><dd data-field="watch"></dd></div><div><dt>Payment time</dt><dd data-field="clock"></dd></div><div><dt>Data</dt><dd data-field="dataset"></dd></div></dl>` : ''}
         ${online && k7.recent.length ? `<div class="live-alerts"><h3>Newest K7 alerts</h3><div class="priority-list">${k7.recent.slice(0, 5).map(a => `<a class="priority-row" data-severity="${esc(a.severity)}" href="alerts.html?alert=${encodeURIComponent(a.alertId)}"><div><strong class="font-mono">${esc(a.alertId)}</strong><small><span class="pii">${esc(a.accountId)}</span> · ${formatDateTime(a.timestamp)}</small><small class="live-reason">${esc(a.reason)}</small></div><span class="priority-score">${formatRisk(a.riskScore)}</span><span class="${severityBadgeClass(a.severity)}">${esc(a.severity)}</span></a>`).join('')}</div></div>` : ''}
