@@ -308,6 +308,7 @@ label.field > span:has(> input[type=checkbox]) { display:inline-flex; align-item
 .live-alerts h3 { font-size:14.5px; margin-bottom:6px; }
 .live-reason { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .live-message { margin:14px 0 0; color:var(--color-warn); font-size:13.5px; }
+.live-message[data-tone=ok] { color:var(--color-ok); }
 .live-card > .helper { margin-top:14px; }
 @media (max-width:900px) { .live-stats { grid-template-columns:repeat(2, minmax(0,1fr)); } }
 @media (prefers-reduced-motion:reduce) { .live-track > i { transition:none; } }

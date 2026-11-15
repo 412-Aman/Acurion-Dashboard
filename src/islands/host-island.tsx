@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { watchHost, sendDeskCommand, watchUploads, describeUpload } from '../lib/hostDesk.js';
-import { canControlDesk, canStart, canPause, describeK7, newRecentAlerts, formatCount } from '../lib/hostStatus.js';
+import { canControlDesk, canStart, canPause, describeK7, newRecentAlerts, formatCount, START_CONFIRMED, CONFIRM_MS } from '../lib/hostStatus.js';
 import { getMyRole } from '../lib/dataService.js';
 import { formatRisk, formatDateTime } from '../lib/utils.js';
 
@@ -31,12 +31,12 @@ function HostIsland() {
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ text: string; tone?: 'ok' }>({ text: '' });
   const [size, setSize] = useState<{ w: number; h: number; x: number } | null>(null);
   const reduced = useReducedMotion();
   const root = useRef<HTMLDivElement>(null), measure = useRef<HTMLDivElement>(null);
   const seenAlerts = useRef<any[] | null>(null), seenJobs = useRef<Map<string, string> | null>(null);
-  const timer = useRef<number | undefined>(undefined), hovering = useRef(false);
+  const timer = useRef<number | undefined>(undefined), confirmTimer = useRef<number | undefined>(undefined), hovering = useRef(false);
 
   const showNotice = useCallback((next: Notice) => {
     setNotice(next);
@@ -72,7 +72,7 @@ function HostIsland() {
       }
       setUploads(jobs);
     });
-    return () => { stopHost(); stopUploads(); window.clearTimeout(timer.current); };
+    return () => { stopHost(); stopUploads(); window.clearTimeout(timer.current); window.clearTimeout(confirmTimer.current); };
   }, [showNotice]);
 
   const myUpload = uploads.find(job => job.mine && ACTIVE_UPLOAD.includes(job.status));
@@ -111,9 +111,17 @@ function HostIsland() {
   }, [mode]);
 
   const command = async (action: 'start' | 'stop') => {
-    setBusy(true); setMessage('');
-    try { const answer = await sendDeskCommand(action); setMessage(answer.ok ? '' : answer.message); }
-    catch { setMessage('The command could not be sent. Check your connection and try again.'); }
+    window.clearTimeout(confirmTimer.current);
+    setBusy(true); setMessage({ text: '' });
+    try {
+      const answer = await sendDeskCommand(action);
+      if (!answer.ok) setMessage({ text: answer.message });
+      else if (action === 'start') {
+        setMessage({ text: START_CONFIRMED, tone: 'ok' });
+        confirmTimer.current = window.setTimeout(() => setMessage({ text: '' }), CONFIRM_MS);
+      }
+    }
+    catch { setMessage({ text: 'The command could not be sent. Check your connection and try again.' }); }
     finally { setBusy(false); }
   };
 
@@ -163,7 +171,7 @@ function HostIsland() {
         <button type="button" className="island-button" onClick={() => { setOpen(false); openUpload(); }}><UploadGlyph />Upload dataset</button>
         <a className="island-link" href="index.html#live-detection">Details</a>
       </div>
-      {message && <p className="island-message" role="status">{message}</p>}
+      {message.text && <p className="island-message" role="status" data-tone={message.tone}>{message.text}</p>}
     </div>;
   } else {
     const uploadOnly = !online || (myUpload && k7.state !== 'running');

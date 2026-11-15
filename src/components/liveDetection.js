@@ -2,7 +2,7 @@
 // K7's newest alerts, refreshed about once a second from the host's status in Firebase.
 import { escapeHTML as esc, icon } from './icons.js';
 import { watchHost, sendDeskCommand } from '../lib/hostDesk.js';
-import { canControlDesk, canStart, canPause, describeK7, formatCount } from '../lib/hostStatus.js';
+import { canControlDesk, canStart, canPause, describeK7, formatCount, START_CONFIRMED, CONFIRM_MS } from '../lib/hostStatus.js';
 import { getMyRole } from '../lib/dataService.js';
 import { exitDemo, DEMO_MODE, HOST_PREVIEW } from '../lib/config.js';
 import { formatRisk, formatDateTime, severityBadgeClass } from '../lib/utils.js';
@@ -11,14 +11,14 @@ const LABEL = { 'getting ready': 'Loading history', ready: 'Ready', running: 'Ru
 const clock = iso => iso && Number.isFinite(Date.parse(iso)) ? `${new Date(iso).toISOString().slice(0, 16).replace('T', ' ')} UTC` : '–';
 
 export function mountLiveDetection(element) {
-  let role = DEMO_MODE && !HOST_PREVIEW ? 'viewer' : 'analyst', status = null, shape = '', busy = false, message = '';
+  let role = DEMO_MODE && !HOST_PREVIEW ? 'viewer' : 'analyst', status = null, shape = '', busy = false, message = '', tone = '', confirmTimer;
   getMyRole().then(value => { role = value; shape = ''; render(); });
 
   function render() {
     if (!status) return;
     const online = status.connection === 'online', k7 = status.k7, controls = canControlDesk(role);
     const state = online ? k7.state : status.connection === 'signed-out' ? 'signed-out' : 'offline';
-    const next = [state, controls, busy, message, k7.recent.map(a => a.alertId).join(','), online && k7.total > 0].join('|');
+    const next = [state, controls, busy, message, tone, k7.recent.map(a => a.alertId).join(','), online && k7.total > 0].join('|');
     if (next !== shape) {
       shape = next;
       // Reviewers always see Start; while it can't be used it stays greyed out and says why.
@@ -31,16 +31,21 @@ export function mountLiveDetection(element) {
           : `<button class="btn-primary" data-desk="start" ${busy || hint ? 'disabled' : ''}${hint ? ' aria-describedby="live-start-hint"' : ''}>${busy ? 'Starting…' : 'Start K7'}</button>`) : '';
       const actionHint = controls && hint && status.connection !== 'signed-out' ? `<p class="live-start-hint" id="live-start-hint">${esc(hint)}</p>` : '';
       element.innerHTML = `<div class="live-head"><div><span class="section-kicker">Live detection</span><div class="live-title-row"><h2 id="live-title">Acurion K7</h2><span class="live-state" data-state="${esc(state)}">${esc(state === 'signed-out' ? 'Sign in' : LABEL[state] || 'Offline')}</span></div><p class="live-desc" data-field="desc"></p></div><div class="live-actions">${action}<button class="btn-ghost" data-open-upload>${icon('upload', 16)}Upload dataset</button>${actionHint}</div></div>
+        ${message ? `<p class="live-message" role="status"${tone ? ` data-tone="${tone}"` : ''}>${esc(message)}</p>` : ''}
         ${online && k7.total > 0 ? `<div class="live-progress"><div class="live-track" role="progressbar" aria-label="Payments checked" aria-valuemin="0" aria-valuemax="${k7.total}" data-field="aria"><i data-field="bar"></i></div><div class="live-progress-meta"><span data-field="checked"></span><span data-field="speed"></span></div></div>
         <dl class="live-stats"><div><dt>Alerts raised</dt><dd data-field="alerts"></dd></div><div><dt>Worth a look</dt><dd data-field="watch"></dd></div><div><dt>Payment time</dt><dd data-field="clock"></dd></div><div><dt>Data</dt><dd data-field="dataset"></dd></div></dl>` : ''}
         ${online && k7.recent.length ? `<div class="live-alerts"><h3>Newest K7 alerts</h3><div class="priority-list">${k7.recent.slice(0, 5).map(a => `<a class="priority-row" data-severity="${esc(a.severity)}" href="alerts.html?alert=${encodeURIComponent(a.alertId)}"><div><strong class="font-mono">${esc(a.alertId)}</strong><small><span class="pii">${esc(a.accountId)}</span> · ${formatDateTime(a.timestamp)}</small><small class="live-reason">${esc(a.reason)}</small></div><span class="priority-score">${formatRisk(a.riskScore)}</span><span class="${severityBadgeClass(a.severity)}">${esc(a.severity)}</span></a>`).join('')}</div></div>` : ''}
         ${online && !controls ? '<p class="helper">A reviewer or admin starts and pauses K7. You see its alerts here and in the queue as they arrive.</p>' : ''}
-        ${message ? `<p class="live-message" role="status">${esc(message)}</p>` : ''}
         ${state === 'offline' && status.connection !== 'signed-out' ? '<p class="helper">K7 runs on the team’s host computer with two weeks of payment history. The host team starts it with docs/HOST_SETUP.md; this card updates on its own when it connects.</p>' : ''}
         ${status.connection === 'signed-out' ? '<p class="helper">K7 checks a recorded stream of IBM’s simulated bank payments (HI-Large) one batch at a time and raises an alert when a payment looks like laundering. Its alerts carry the reasons behind each score.</p>' : ''}`;
       element.querySelector('[data-desk]')?.addEventListener('click', async event => {
-        busy = true; message = ''; render();
-        try { const answer = await sendDeskCommand(event.currentTarget.dataset.desk); if (!answer.ok) message = answer.message; }
+        const action = event.currentTarget.dataset.desk;
+        clearTimeout(confirmTimer); busy = true; message = ''; tone = ''; render();
+        try {
+          const answer = await sendDeskCommand(action);
+          if (!answer.ok) message = answer.message;
+          else if (action === 'start') { message = START_CONFIRMED; tone = 'ok'; confirmTimer = setTimeout(() => { message = ''; tone = ''; render(); }, CONFIRM_MS); }
+        }
         catch { message = 'The command could not be sent. Check your connection and try again.'; }
         finally { busy = false; render(); }
       });

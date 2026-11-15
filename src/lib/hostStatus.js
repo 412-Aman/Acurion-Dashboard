@@ -48,6 +48,10 @@ function offlineK7(problem) {
   return { state: 'offline', problem, sent: 0, total: 0, progress: 0, speed: null, alerts: 0, watch: 0, paymentTime: null, model: 'Acurion K7', dataset: '', copyProblem: '', recent: [] };
 }
 
+// Shown beside Start once the host confirms it, then cleared after CONFIRM_MS.
+export const START_CONFIRMED = 'K7 is ready. It is checking payments as they arrive.';
+export const CONFIRM_MS = 8000;
+
 export const canControlDesk = role => ['reviewer', 'admin'].includes(role);
 export const canStart = status => status.connection === 'online' && ['ready', 'paused'].includes(status.k7.state);
 export const canPause = status => status.connection === 'online' && status.k7.state === 'running';
