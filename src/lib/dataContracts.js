@@ -75,6 +75,12 @@ export function validateReview(review) {
   if (review.status === 'closed' && !['no_further_action','escalated_to_case'].includes(review.disposition)) errors.push('Choose a disposition before closing the alert.');
   return errors;
 }
+// The alert fields one review writes. "Review ongoing" has no disposition: it is sent as null (Firebase
+// removes the field, and its rules never validate null), and a missing disposition reads back as ''.
+export function reviewPatch(review, actor, timestamp) {
+  return { status:review.status, owner:String(review.owner||'').trim(), disposition:review.disposition||null,
+    analystNote:String(review.note||'').trim(), reviewedAt:timestamp, reviewedBy:actor };
+}
 export function compareAlertPriority(a,b) {
   const closed = record => ['closed','resolved'].includes(record.status) ? 1 : 0;
   const rank = {critical:4,high:3,medium:2,low:1,unknown:0};

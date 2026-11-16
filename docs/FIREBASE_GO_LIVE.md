@@ -60,8 +60,9 @@ In **Rules** › **Rules Playground**, simulate as an authenticated user with `e
 | The same read, simulated with `email_verified: false` | Denied |
 | Set `/uploadJobs/<a job whose by is that uid and status is columns>/mapping/sender` to `"Acct Holder"` | Allowed |
 | The same, as a different uid, or set `/uploadJobs/<that job>/fileName` | **Denied** |
+| Set `/alerts/<an existing alert>/disposition` to `"no_further_action"` | Allowed |
 
-**Republish the rules whenever `firebase/database.rules.json` changes in the repository.** The 16 Nov version adds the column review (`mapping`, status `columns`); without it, confirming a review on the website is denied.
+**Republish the rules whenever `firebase/database.rules.json` changes in the repository.** The 16 Nov version adds the column review (`mapping`, status `columns`); without it, confirming a review on the website is denied. The later 16 Nov version also fixes alert reviews: the disposition rule used a pattern that Firebase only matched for "Escalated to a case", so saving "No further action" was denied.
 
 ## 2. Create an admin key (keep it private)
 

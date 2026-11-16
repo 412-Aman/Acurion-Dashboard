@@ -41,7 +41,7 @@
         },
         "disposition": {
           ".write": "data.parent().exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",
-          ".validate": "newData.isString() && newData.val().matches(/^(|no_further_action|escalated_to_case)$/)"
+          ".validate": "newData.isString() && (newData.val() === '' || newData.val() === 'no_further_action' || newData.val() === 'escalated_to_case')"
         },
         "analystNote": {
           ".write": "data.parent().exists() && auth != null && auth.token.email_verified === true && root.child('roles').child(auth.uid).val() !== 'viewer'",

@@ -4,7 +4,7 @@ import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { auth, db, fs, requireSession } from './firebase.js';
 import { DEMO_MODE, DATA_PATHS, READ_LIMIT, LEGACY_FIRESTORE_AUDIT } from './config.js';
 import { readAuditSources } from './auditSources.js';
-import { normalizeAlert, normalizeTransaction, normalizeAuditLog, validateReview, isoTimestamp, finiteNumber } from './dataContracts.js';
+import { normalizeAlert, normalizeTransaction, normalizeAuditLog, validateReview, reviewPatch, isoTimestamp, finiteNumber } from './dataContracts.js';
 import { setDataStatus, withTimeout, dataErrorCode } from './dataStatus.js';
 import { loadWorkspace, saveWorkspace } from './complianceStore.js';
 import { assessTransaction } from './amlEngine.js';
@@ -156,13 +156,13 @@ export async function saveAlertReview(alert, review) {
   const errors=validateReview(review);if(errors.length)throw Object.assign(new Error(errors.join(' ')),{code:'data/invalid-review'});
   const timestamp=new Date().toISOString();
   const actor=DEMO_MODE?'demo:analyst':(await withTimeout(requireSession())).uid;
-  const patch={status:review.status,owner:review.owner.trim(),disposition:review.disposition||'',analystNote:review.note.trim(),reviewedAt:timestamp,reviewedBy:actor};
+  const patch=reviewPatch(review,actor,timestamp),saved={...patch,disposition:patch.disposition||''};
   const log={id:crypto.randomUUID(),timestamp,alertId:alert.id,transactionId:alert.transactionId,action:'Analyst review recorded',actor,decision:alert.decision,detail:`${review.status}: ${review.note.trim()}`};
   setDataStatus('alert review write',{state:'loading',path:DATA_PATHS.alerts,mode:DEMO_MODE?'demo':'firebase',error:null});
   try {
   if(DEMO_MODE) {
     // Demo reviews live in the encrypted case workspace and its hash-chained audit trail.
-    const state=loadWorkspace();state.alertReviews.reviews[alert.id]=patch;saveWorkspace(state,'Analyst review recorded',`${alert.id}: ${review.status}${review.disposition?` (${review.disposition.replaceAll('_',' ')})`:''}: ${review.note.trim()}`);
+    const state=loadWorkspace();state.alertReviews.reviews[alert.id]=saved;saveWorkspace(state,'Analyst review recorded',`${alert.id}: ${review.status}${review.disposition?` (${review.disposition.replaceAll('_',' ')})`:''}: ${review.note.trim()}`);
   } else {
     const key=push(ref(db,DATA_PATHS.audit)).key;
     const changes={};for(const [field,value]of Object.entries(patch))changes[`${DATA_PATHS.alerts}/${alert.firebaseKey}/${field}`]=value;
@@ -172,7 +172,7 @@ export async function saveAlertReview(alert, review) {
   setDataStatus('alert review write',{state:'ready',lastSuccess:timestamp,error:null});
   } catch(error) { setDataStatus('alert review write',{state:'error',error:dataErrorCode(error,'data/write-failed')});throw error; }
   cache.delete('alerts');cache.delete('audit');
-  return {...alert,...patch};
+  return {...alert,...saved};
 }
 export function subscribeToUpdates(resource,callback) {
   if(DEMO_MODE)return()=>{};

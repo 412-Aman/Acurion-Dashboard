@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeTransaction,normalizeAlert,validateReview,compareAlertPriority } from '../src/lib/dataContracts.js';
+import { normalizeTransaction,normalizeAlert,validateReview,reviewPatch,compareAlertPriority } from '../src/lib/dataContracts.js';
 import { ingestEvents,scenarioEvents,validateEvent } from '../src/lib/eventIngestion.js';
 import { assessTransaction,defaultPolicy,accountBehavior } from '../src/lib/amlEngine.js';
 import { findTransactionPath,boundedNeighborhood,filterGraphEdges } from '../src/lib/graphInvestigation.js';
@@ -102,4 +102,10 @@ test('empty and denied source states stay distinguishable; stalled operations ti
   assert.match(describeDataError({code:'PERMISSION_DENIED'}),/denied/);assert.match(describeDataError({code:'auth/session-required'}),/Sign in/);
   assert.equal(await withTimeout(Promise.resolve([]),50).then(value=>value.length),0);
   await assert.rejects(withTimeout(new Promise(()=>{}),5),error=>error.code==='data/timeout');
+});
+test('a review with no disposition sends null, so Firebase removes the field instead of validating an empty string',()=>{
+  const ongoing=reviewPatch({status:'investigating',owner:'  Aman ',disposition:'',note:' Checked the counterparty history. '},'uid-1','2026-11-16T09:00:00.000Z');
+  assert.deepEqual(ongoing,{status:'investigating',owner:'Aman',disposition:null,analystNote:'Checked the counterparty history.',reviewedAt:'2026-11-16T09:00:00.000Z',reviewedBy:'uid-1'});
+  assert.equal(reviewPatch({status:'closed',owner:'Aman',disposition:'no_further_action',note:'Reviewed the evidence.'},'uid-1','t').disposition,'no_further_action');
+  assert.equal(normalizeAlert('k7-a',{alertId:'a'}).disposition,'');
 });
