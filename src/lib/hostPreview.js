@@ -106,3 +106,17 @@ export async function previewConfirm(id, mapping) {
   })();
 }
 export function previewCancel(id) { const job = jobs.get(id); if (job && ['uploading', 'queued', 'columns'].includes(job.status)) { job.status = 'cancelled'; pushJobs(); } }
+
+// Two model alerts as K7 and an upload would write them, so the alert drawer can be checked without a host.
+export function previewAlerts() {
+  const now = Date.now();
+  return [
+    { key: 'k7-al_preview0001', data: { alertId: 'al_preview0001', accountId: '16975:80634E1EEF', riskScore: 0.962, severity: 'critical', status: 'open', transactionId: 'tx-preview-1', timestamp: new Date(now - 3600e3).toISOString(),
+      modelVersion: 'Acurion K7 (real-time laundering model, rt/core)', sourceDataset: 'Acurion K7 live (HI-Large, simulated IBM AML data)', decision: 'flag', featureWindow: 'the 14 days before the transfer',
+      reason: 'Receiver passed almost the same amount on within 72 hours; First payment from this sender to this receiver',
+      shapExplanation: { method: 'K7 ensemble', topFeatures: [{ feature: 'Receiver passed almost the same amount on within 72 hours', impact: 1.42 }, { feature: 'First payment from this sender to this receiver', impact: 0.88 }, { feature: 'Amount far above the sender’s usual payments', impact: 0.61 }, { feature: 'Sender’s account is a long-standing customer', impact: -0.35 }] } } },
+    { key: 'up-NkPreviewJob1-001', data: { alertId: 'UP-ewJob1-001', accountId: 'ACC-10293', riskScore: 0.874, severity: 'high', status: 'investigating', owner: 'A. Reddy', transactionId: 'P-1004', timestamp: new Date(now - 7200e3).toISOString(),
+      modelVersion: 'acurion-risk-core', sourceDataset: 'Upload · bank_export.csv', uploadId: 'NkPreviewJob1', networkId: 'up-NkPreviewJob1-net-01', decision: 'flag',
+      reasons: ['Money passed through within a day', 'Part of a fan-in network', 'Round amount just under a reporting limit'] } },
+  ];
+}

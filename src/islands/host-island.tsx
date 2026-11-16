@@ -1,21 +1,52 @@
 // The header "island": a black capsule showing Acurion K7's live state. Click it and it springs open into
-// a panel with progress, the newest alerts and Start / Pause; when K7 raises an alert, or your upload is
-// analysed, it briefly opens into a notification. Everything comes from Firebase via lib/hostDesk.js.
+// a panel with progress, the newest alerts and Start / Pause. It is also the app's one place for pop-ups:
+// confirmations and warnings from any page (lib/notify.js), K7's new alerts, and the whole upload flow, which
+// grows out of it (upload-panel.tsx). Everything live comes from Firebase via lib/hostDesk.js.
 import { createRoot } from 'react-dom/client';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { watchHost, sendDeskCommand, watchUploads, describeUpload } from '../lib/hostDesk.js';
 import { canControlDesk, canStart, canPause, describeK7, newRecentAlerts, formatCount, START_CONFIRMED, CONFIRM_MS } from '../lib/hostStatus.js';
 import { getMyRole } from '../lib/dataService.js';
 import { formatRisk, formatDateTime } from '../lib/utils.js';
+import { onNotify } from '../lib/notify.js';
+import { onUploadRequest, beginUpload, requestUpload, subscribeUpload, uploadState, sentShare } from '../lib/uploadFlow.js';
+import { UploadPanel } from './upload-panel';
 
-type Notice = { key: string; tone: 'alert' | 'ok' | 'warn' | 'ask'; title: string; detail: string; note: string; href: string; jobId?: string };
-type Mode = 'hidden' | 'compact' | 'expanded' | 'notice';
+type Notice = { key: string; tone: 'alert' | 'ok' | 'warn' | 'ask' | 'info'; title: string; detail?: string; note?: string; href?: string; jobId?: string };
+type Mode = 'hidden' | 'compact' | 'expanded' | 'notice' | 'upload';
 const STATE_LABEL: Record<string, string> = { 'getting ready': 'Loading', ready: 'Ready', running: 'Running', paused: 'Paused', finished: 'Finished', failed: 'Needs attention', offline: 'Offline' };
 const NOTICE_MS = 5200;
 const ACTIVE_UPLOAD = ['uploading', 'queued', 'received', 'columns', 'analysing'];
-const UPLOAD_WORD: Record<string, string> = { uploading: 'Uploading', columns: 'Confirm columns' };
-const openUpload = (jobId?: string) => document.dispatchEvent(new CustomEvent('acurion:open-upload', { detail: { jobId } }));
+const UPLOAD_WORD: Record<string, string> = { uploading: 'Uploading', columns: 'Check columns', queued: 'In line', received: 'Scanning', analysing: 'Scanning' };
+const openUpload = (jobId?: string) => requestUpload(jobId);
+
+function topModal(): HTMLElement | null {
+  try { return ([...document.querySelectorAll('dialog[open]')].filter(d => d.matches(':modal')).pop() as HTMLElement) || null; } catch { return null; }
+}
+
+// The same notice, drawn in the top layer inside the open modal so it is both visible and clickable.
+function FloatingNotice({ host, children, onGone }: { host: HTMLElement; children: ReactNode; onGone: () => void }) {
+  const ref = useRef<HTMLDivElement>(null), reduced = useReducedMotion();
+  useLayoutEffect(() => {
+    const node = ref.current as any;
+    try { node?.showPopover?.(); } catch { /* already shown */ }
+    // Keep clear of the modal: beside a side drawer, centred over the page it dims; otherwise above it, or at the bottom.
+    const box = host.getBoundingClientRect(), width = node?.offsetWidth || 340;
+    if (box.left >= width + 24) node.style.left = `${box.left / 2}px`;
+    else if (box.top < 90) { node.style.top = 'auto'; node.style.bottom = 'max(18px, env(safe-area-inset-bottom))'; }
+  }, [host]);
+  useEffect(() => { const gone = () => onGone(); host.addEventListener('close', gone); return () => host.removeEventListener('close', gone); }, [host, onGone]);
+  return createPortal(<motion.div ref={ref} {...{ popover: 'manual' } as any} className="island-float"
+    initial={reduced ? { opacity: 0 } : { opacity: 0, y: -14, scale: 0.9, filter: 'blur(6px)' }} animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+    transition={reduced ? { duration: 0.12 } : { type: 'spring', bounce: 0.25, duration: 0.5 }}>{children}</motion.div>, host);
+}
+
+function MiniRing({ share }: { share: number }) {
+  const c = 2 * Math.PI * 6;
+  return <svg className="island-ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6" /><circle cx="8" cy="8" r="6" strokeDasharray={c} strokeDashoffset={c * (1 - share)} /></svg>;
+}
 
 const paymentClock = (iso: string | null) => iso && Number.isFinite(Date.parse(iso)) ? `${new Date(iso).toISOString().slice(11, 16)} UTC` : '–';
 const percent = (value: number) => `${(Math.floor(value * 1000) / 10).toFixed(1)}%`;
@@ -27,23 +58,36 @@ function UploadGlyph() {
 function HostIsland() {
   const [status, setStatus] = useState<any>(null);
   const [uploads, setUploads] = useState<any[]>([]);
-  const [role, setRole] = useState('viewer');
+  const [role, setRole] = useState(''); // '' until the account's role is known
   const [open, setOpen] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; tone?: 'ok' }>({ text: '' });
   const [size, setSize] = useState<{ w: number; h: number; x: number } | null>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const flow: any = useSyncExternalStore(subscribeUpload, uploadState);
+  const uploadOpenRef = useRef(false);
+  uploadOpenRef.current = uploadOpen;
   const reduced = useReducedMotion();
   const root = useRef<HTMLDivElement>(null), measure = useRef<HTMLDivElement>(null);
   const seenAlerts = useRef<any[] | null>(null), seenJobs = useRef<Map<string, string> | null>(null);
   const timer = useRef<number | undefined>(undefined), confirmTimer = useRef<number | undefined>(undefined), hovering = useRef(false);
 
+  // A notice raised while a modal (an alert drawer, a case) is open floats above it instead of hiding behind it.
+  const [noticeHost, setNoticeHost] = useState<HTMLElement | null>(null);
   const showNotice = useCallback((next: Notice) => {
+    setNoticeHost(topModal());
     setNotice(next);
     window.clearTimeout(timer.current);
     const close = () => { if (hovering.current) timer.current = window.setTimeout(close, 1200); else setNotice(null); };
     timer.current = window.setTimeout(close, NOTICE_MS);
   }, []);
+
+  useEffect(() => {
+    const stopNotify = onNotify(showNotice);
+    const stopRequests = onUploadRequest((jobId?: string) => { beginUpload(jobId); setOpen(false); setNotice(null); setUploadOpen(true); });
+    return () => { stopNotify(); stopRequests(); };
+  }, [showNotice]);
 
   useEffect(() => {
     getMyRole().then(setRole).catch(() => {});
@@ -64,20 +108,34 @@ function HostIsland() {
       if (previous) for (const job of jobs) {
         const before = previous.get(job.id);
         if (!job.mine || before === job.status || !before || !ACTIVE_UPLOAD.includes(before)) continue;
-        if (job.status === 'succeeded') showNotice({ key: job.id, tone: 'ok', title: `${job.fileName} analysed`, detail: describeUpload(job),
-          note: `${formatCount(job.summary?.networksWritten)} networks · ${formatCount(job.summary?.highRisk)} high-risk transfers`, href: `alerts.html?source=${encodeURIComponent(job.id)}` });
-        if (job.status === 'failed') showNotice({ key: job.id, tone: 'warn', title: `${job.fileName} was not analysed`, detail: describeUpload(job), note: 'Open Transactions to see your uploads.', href: 'transactions.html#uploads' });
-        if (job.status === 'columns') showNotice({ key: `${job.id}-columns`, tone: 'ask', title: `Confirm the columns of ${job.fileName}`, detail: 'The host has read the file. Check what each column is used for.',
-          note: 'Nothing is scored until you confirm.', href: 'transactions.html#uploads', jobId: job.id });
+        // The open upload panel already shows its own job's progress.
+        if (uploadOpenRef.current && (uploadState() as any).jobId === job.id) continue;
+        if (job.status === 'succeeded') showNotice({ key: job.id, tone: 'ok', title: `${job.fileName} is scanned`, detail: `${formatCount(job.summary?.alertsWritten)} new alerts`,
+          note: `${formatCount(job.summary?.highRisk)} high risk · ${formatCount(job.summary?.networksWritten)} networks`, href: `alerts.html?source=${encodeURIComponent(job.id)}`, jobId: job.id });
+        if (job.status === 'failed') showNotice({ key: job.id, tone: 'warn', title: `${job.fileName} was not scanned`, detail: 'Open it to see what went wrong.', jobId: job.id });
+        if (job.status === 'columns') showNotice({ key: `${job.id}-columns`, tone: 'ask', title: `Check the columns of ${job.fileName}`, detail: 'Acurion has read your file.',
+          note: 'Nothing is scanned until you confirm.', jobId: job.id });
       }
       setUploads(jobs);
     });
     return () => { stopHost(); stopUploads(); window.clearTimeout(timer.current); window.clearTimeout(confirmTimer.current); };
   }, [showNotice]);
 
-  const myUpload = uploads.find(job => job.mine && ACTIVE_UPLOAD.includes(job.status));
+  const myUpload = uploads.find(job => job.mine && ACTIVE_UPLOAD.includes(job.status)) || (flow.step === 'sending' ? { id: '', fileName: flow.file?.name || 'Your file', status: 'uploading', mine: true } : undefined);
   const online = status?.connection === 'online';
-  const mode: Mode = notice && !open ? 'notice' : !online && !myUpload ? 'hidden' : open ? 'expanded' : 'compact';
+  const floating = !!(notice && noticeHost?.isConnected && (noticeHost as HTMLDialogElement).open);
+  const mode: Mode = uploadOpen ? 'upload' : notice && !open && !floating ? 'notice' : !online && !myUpload ? 'hidden' : open ? 'expanded' : 'compact';
+  const dropHost = useCallback(() => setNoticeHost(null), []);
+  const closeUpload = useCallback(() => setUploadOpen(false), []);
+
+  // While the upload panel is open, the page behind it dims and the header sits above the page dock.
+  useEffect(() => {
+    if (mode !== 'upload') return;
+    document.documentElement.dataset.islandFocus = 'true';
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape' && !event.defaultPrevented) setUploadOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => { delete document.documentElement.dataset.islandFocus; document.removeEventListener('keydown', onKey); };
+  }, [mode]);
 
   // Close on Escape or a press outside; never while a command is being sent.
   useEffect(() => {
@@ -125,20 +183,29 @@ function HostIsland() {
     finally { setBusy(false); }
   };
 
-  if (!status || mode === 'hidden') return <div className="host-island-anchor" data-empty="true" ref={root} />;
+  const noticeView = notice ? (() => {
+    const inner = <><span className="island-notice-mark" aria-hidden="true" />
+      <span className="island-notice-text"><strong>{notice.title}</strong>{notice.detail ? <small>{notice.detail}</small> : null}{notice.note ? <em>{notice.note}</em> : null}</span>
+      {notice.href || notice.jobId ? <span className="island-notice-go">Open</span> : null}</>;
+    return notice.href || notice.jobId
+      ? <a className="island-notice" href={notice.href || '#'} data-tone={notice.tone} onClick={event => { setNotice(null); if (notice.jobId) { event.preventDefault(); openUpload(notice.jobId); } }}>{inner}</a>
+      : <button type="button" className="island-notice" data-tone={notice.tone} aria-label={`${notice.title}. Dismiss`} onClick={() => setNotice(null)}>{inner}</button>;
+  })() : null;
+  const float = floating && noticeHost ? <FloatingNotice key={notice!.key} host={noticeHost} onGone={dropHost}>{noticeView}</FloatingNotice> : null;
+  if (!status || mode === 'hidden') return <div className="host-island-anchor" data-empty="true" ref={root}>{float}</div>;
+  const scrim = typeof document === 'undefined' ? null : createPortal(<AnimatePresence>{mode === 'upload' &&
+    <motion.div key="scrim" className="island-scrim" aria-hidden="true" onClick={closeUpload} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reduced ? 0.1 : 0.24 }} />}</AnimatePresence>, document.body);
   const k7 = status.k7;
   const controls = canControlDesk(role);
-  const spring = reduced ? { duration: 0 } : mode === 'compact' ? { type: 'spring' as const, bounce: 0, duration: 0.42 } : { type: 'spring' as const, bounce: 0.2, duration: 0.5 };
+  const spring = reduced ? { duration: 0 } : mode === 'compact' ? { type: 'spring' as const, bounce: 0, duration: 0.42 } : mode === 'upload' ? { type: 'spring' as const, bounce: 0.14, duration: 0.55 } : { type: 'spring' as const, bounce: 0.2, duration: 0.5 };
   const fade = reduced ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } }
     : { initial: { opacity: 0, scale: 0.94, filter: 'blur(6px)' }, animate: { opacity: 1, scale: 1, filter: 'blur(0px)' }, exit: { opacity: 0, scale: 0.94, filter: 'blur(6px)' }, transition: { duration: 0.2, ease: [0.23, 1, 0.32, 1] as const } };
 
   let content: ReactNode;
-  if (mode === 'notice' && notice) {
-    content = <a className="island-notice" href={notice.href} data-tone={notice.tone} onClick={event => { setNotice(null); if (notice.jobId) { event.preventDefault(); openUpload(notice.jobId); } }}>
-      <span className="island-notice-mark" aria-hidden="true" />
-      <span className="island-notice-text"><strong>{notice.title}</strong><small>{notice.detail}</small><em>{notice.note}</em></span>
-      <span className="island-notice-go">Open</span>
-    </a>;
+  if (mode === 'upload') {
+    content = <UploadPanel host={status} onClose={closeUpload} readOnly={role === 'viewer' && status?.connection !== 'signed-out'} />;
+  } else if (mode === 'notice' && notice) {
+    content = noticeView;
   } else if (mode === 'expanded') {
     const recent = k7.recent.slice(0, 3);
     content = <div className="island-panel" id="host-island-panel" role="dialog" aria-label="Acurion K7 live detection">
@@ -175,9 +242,11 @@ function HostIsland() {
     </div>;
   } else {
     const uploadOnly = !online || (myUpload && k7.state !== 'running');
-    content = <button type="button" className="island-compact" aria-expanded={open} aria-controls="host-island-panel" onClick={() => setOpen(true)}
-      aria-label={uploadOnly ? `Upload: ${myUpload?.fileName}, ${describeUpload(myUpload)}` : `Acurion K7: ${STATE_LABEL[k7.state]}. Open live detection`}>
-      {uploadOnly ? <><span className="island-glyph" data-ask={myUpload.status === 'columns' || undefined}><UploadGlyph /></span><span className="island-name">{UPLOAD_WORD[myUpload.status] || 'Analysing'}</span><span className="island-figure island-file">{myUpload.fileName}</span></>
+    const sending = flow.step === 'sending';
+    content = <button type="button" className="island-compact" aria-expanded={uploadOnly ? undefined : open} aria-controls={uploadOnly ? undefined : 'host-island-panel'}
+      onClick={() => uploadOnly ? openUpload(myUpload?.id || undefined) : setOpen(true)}
+      aria-label={uploadOnly ? `Upload: ${myUpload?.fileName}, ${sending ? 'sending' : describeUpload(myUpload)}. Open` : `Acurion K7: ${STATE_LABEL[k7.state]}. Open live detection`}>
+      {uploadOnly ? <><span className="island-glyph" data-ask={myUpload.status === 'columns' || undefined}>{sending ? <MiniRing share={sentShare(flow.progress)} /> : <UploadGlyph />}</span><span className="island-name">{sending ? `Sending ${Math.round(sentShare(flow.progress) * 100)}%` : UPLOAD_WORD[myUpload.status] || 'Scanning'}</span><span className="island-figure island-file">{myUpload.fileName}</span></>
         : <>
           <span className="island-dot" data-state={k7.state} aria-hidden="true" />
           <span className="island-name">K7</span>
@@ -188,7 +257,8 @@ function HostIsland() {
     </button>;
   }
 
-  return <div className="host-island-anchor" ref={root} onPointerEnter={() => { hovering.current = true; }} onPointerLeave={() => { hovering.current = false; }}>
+  return <div className="host-island-anchor" ref={root} data-mode={mode} onPointerEnter={() => { hovering.current = true; }} onPointerLeave={() => { hovering.current = false; }}>
+    {scrim}{float}
     <motion.div className="host-island" data-mode={mode} initial={false}
       animate={size ? { width: size.w, height: size.h, x: size.x, borderRadius: mode === 'compact' ? 19 : 26 } : undefined} transition={spring}>
       <div className="host-island-measure" ref={measure} data-mode={mode}>
@@ -197,7 +267,7 @@ function HostIsland() {
         </AnimatePresence>
       </div>
     </motion.div>
-    <span className="sr-only" aria-live="polite">{notice ? `${notice.title}. ${notice.detail}` : ''}</span>
+    <span className="sr-only" aria-live="polite">{notice ? `${notice.title}. ${notice.detail || ''}` : ''}</span>
   </div>;
 }
 

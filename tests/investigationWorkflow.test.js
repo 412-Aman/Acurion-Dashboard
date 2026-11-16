@@ -109,3 +109,10 @@ test('a review with no disposition sends null, so Firebase removes the field ins
   assert.equal(reviewPatch({status:'closed',owner:'Aman',disposition:'no_further_action',note:'Reviewed the evidence.'},'uid-1','t').disposition,'no_further_action');
   assert.equal(normalizeAlert('k7-a',{alertId:'a'}).disposition,'');
 });
+test('a payment outside the loaded sample is looked for where its alert’s writer stored it', async () => {
+  const { transactionKeyRange } = await import('../src/lib/dataContracts.js');
+  assert.deepEqual(transactionKeyRange('k7-h0000123'), ['k7-h0000123-', 'k7-h0000123-']);
+  assert.deepEqual(transactionKeyRange('up--NkAbC_d-a0007'), ['up--NkAbC_d-t', 'up--NkAbC_d-t']);
+  assert.equal(transactionKeyRange('RULE-CW-TX-1005'), null);
+  assert.equal(transactionKeyRange(''), null);
+});

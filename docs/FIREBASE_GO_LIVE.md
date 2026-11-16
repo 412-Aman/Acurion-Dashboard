@@ -108,8 +108,8 @@ Redeploy after saving. No other variable is needed: the website never holds a ho
 ## 6. Check it
 
 1. Sign in with a verified account and open **System status** › **Check connection**. Every source should read **ready**.
-2. Once the host is running ([HOST_SETUP.md](HOST_SETUP.md)), Platform services shows **Detection model: Acurion K7** as Ready, and a black K7 capsule appears in the header.
-3. As a reviewer, open the capsule and press **Start**. Progress moves within a few seconds, and the first alert arrives within about a minute.
+2. Once the host is running ([HOST_SETUP.md](HOST_SETUP.md)), Platform services shows **Detection model: Acurion K7** as Ready, and a black K7 pill appears in the header.
+3. As a reviewer, open the pill and press **Start**. Progress moves within a few seconds, and the first alert arrives within about a minute.
 4. Open an alert, save a review, and confirm it appears under **Reports › Audit activity**.
 
 ## If something fails
@@ -118,7 +118,7 @@ Redeploy after saving. No other variable is needed: the website never holds a ho
 | --- | --- |
 | "Your account cannot access these records" | The email is not verified, or the rules from step 1 are not published. |
 | "Review was not saved" | The rules are not published, or the account is set to `viewer`. |
-| The K7 capsule never appears | The host bridge is not running, or it uses a different Firebase project. Check `hostDesk/status/updatedAt` in **Data**: it should change every few seconds. |
+| The K7 pill never appears | The host bridge is not running, or it uses a different Firebase project. Check `hostDesk/status/updatedAt` in **Data**: it should change every few seconds. |
 | "A reviewer or admin starts K7" | Give that person the reviewer role (step 3), then reload. |
 | "The Acurion host did not answer within 12 seconds" | The bridge stopped on the host. Restart `Start website bridge.bat`. |
 | Cases says the team workspace needs an analyst role | The account is set to `viewer`. Remove the role with `--role analyst`. |

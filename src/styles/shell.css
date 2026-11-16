@@ -308,6 +308,7 @@
 
 @media (max-width:767px) {
   .host-island-anchor { flex:0 0 auto; width:76px; margin-left:auto; }
+  .host-island-anchor[data-empty=true] { width:0; }
   .island-compact { gap:7px; padding:0 12px; }
   .island-compact .island-meter, .island-compact .island-figure { display:none; }
 }
@@ -318,3 +319,5 @@
 @media (prefers-reduced-transparency:reduce), (prefers-contrast:more) { .host-island { background:#000; box-shadow:0 0 0 1px #5a5a5a; } }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
 .host-island-root { display:contents; }
+/* Narrow phones: the logo mark alone, so the header never pushes the page sideways. */
+@media (max-width:430px) { .workspace-brand strong { display:none; } }

@@ -164,11 +164,11 @@ export async function confirmColumns(id, mapping) {
 // Plain-language stage of an upload, for lists and the dialog.
 export function describeUpload(job) {
   if (job.status === 'succeeded') return `${(job.summary?.alertsWritten ?? 0).toLocaleString('en-GB')} alerts from ${(job.summary?.transactions ?? 0).toLocaleString('en-GB')} transactions`;
-  if (job.status === 'failed') return job.error?.message || 'The host could not analyse this file.';
+  if (job.status === 'failed') return job.error?.message || 'Acurion could not scan this file.';
   if (job.status === 'cancelled') return 'Cancelled';
   if (job.status === 'uploading') return 'Uploading';
-  if (job.status === 'columns') return job.mine ? 'Confirm the columns to start the analysis' : `Waiting for ${job.byName} to confirm the columns`;
-  if (job.status === 'queued') return job.columns ? 'Columns confirmed, waiting for the Acurion host' : 'Waiting for the Acurion host';
-  if (job.status === 'received' && !job.columns) return 'The host is reading the columns';
-  return job.progress?.note || 'Analysing on the Acurion host';
+  if (job.status === 'columns') return job.mine ? 'Check the columns to start the scan' : `Waiting for ${job.byName} to check the columns`;
+  if (job.status === 'queued') return job.columns ? 'Columns checked, in line for the scanner' : 'Waiting for the scanner';
+  if (job.status === 'received' && !job.columns) return 'Reading the columns';
+  return job.progress?.note || 'Scanning';
 }

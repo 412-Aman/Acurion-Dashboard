@@ -5,13 +5,14 @@ import { authSettings,requiresEmailVerification } from '../lib/authPolicy.js';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from '../lib/firebase.js';
 import { onValue, ref } from 'firebase/database';
-import { DEMO_MODE, ENV_DEMO, HOST_PREVIEW, exitDemo } from '../lib/config.js';
+import { DEMO_MODE, ENV_DEMO, exitDemo } from '../lib/config.js';
 import { installUploadDialog } from './uploadDialog.js';
 import { NAV_ITEMS, activeNavigation } from '../lib/navigation.js';
 import { observePageDataStatus, dataErrorDetails } from '../lib/dataStatus.js';
 import { icon, escapeHTML as esc } from './icons.js';
 import { installRecordMenu } from './recordMenu.js';
 import { installTooltips } from './tooltip.js';
+import { installInfoPops } from './infoPop.js';
 import { installRowLinks } from './rowLinks.js';
 import { workspaceInfo, lockWorkspace } from '../lib/complianceStore.js';
 import { getMyRole } from '../lib/dataService.js';
@@ -19,6 +20,7 @@ import { mountNavigationDock } from '../islands/navigation-dock.tsx';
 import { mountWorkspaceMap } from '../islands/workspace-map.tsx';
 export function renderLayout({active,pageTitle,pageSubtitle,actions=''}) {
   installTooltips();
+  installInfoPops();
   installCustomSelects();
   const root=document.getElementById('app');
   let view=new URLSearchParams(location.search).get('view')||'customers';
@@ -77,8 +79,8 @@ export function renderLayout({active,pageTitle,pageSubtitle,actions=''}) {
   document.addEventListener('click',event=>{const dialog=event.target;if(!(dialog instanceof HTMLDialogElement)||!dialog.open||dialog.classList.contains('dock-mobile-dialog'))return;const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close();});
   installRowLinks();
   installUploadDialog();
-  // Acurion K7's live state in the header (signed-in workspaces; the demo has no host).
-  if(!DEMO_MODE||HOST_PREVIEW)import('../islands/host-island.tsx').then(({mountHostIsland})=>mountHostIsland(document.getElementById('host-island-root'))).catch(()=>{});
+  // The header pill: K7's live state when signed in, and on every page the pop-ups and the upload flow.
+  import('../islands/host-island.tsx').then(({mountHostIsland})=>mountHostIsland(document.getElementById('host-island-root'))).catch(()=>{});
   getMyRole().then(role=>{const label=document.getElementById('account-verification');if(label&&role)label.dataset.role=role;const tag=document.createElement('em');tag.className='account-role';tag.textContent=role==='viewer'?'Read-only access':`${role[0].toUpperCase()}${role.slice(1)} role`;document.querySelector('.account-summary')?.append(tag);});
   // Lock, inactivity and screen-sharing controls for the encrypted workspace.
   const lockNow=async(reason='')=>{await lockWorkspace();if(reason==='idle'&&!DEMO_MODE){try{await signOut(auth);}catch{}location.replace(`login.html?idle=1&next=${encodeURIComponent(location.pathname.split('/').pop()+location.search)}`);return;}location.reload();};

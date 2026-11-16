@@ -43,7 +43,7 @@ Model scores are rankings from 0 to 1, never probabilities or percentages. The c
 | System status (`system.html`) | Platform services (K7 and upload scoring state), source checks, dataset field coverage, demo reset |
 | Sign-in pages | Email, Google and GitHub sign-in, registration, verification, password reset |
 
-Every row and card that opens a record can be clicked anywhere on it, and record panels close with ×, Escape or a click outside. The black **K7 capsule** in the header springs open into a live panel when clicked, and briefly into a notification when K7 raises an alert, when your upload needs its columns confirmed, or when it is analysed.
+Every row and card that opens a record can be clicked anywhere on it, and record panels close with ×, Escape or a click outside. The black **pill** in the header is the app's one place for pop-ups: it springs open into K7's live panel when clicked, into the whole upload flow (drop a file, check its columns, watch the scan, see the results), and briefly into a notification when K7 raises an alert, an upload needs you, or you save a review or open a case. Detail sits behind small **More info** buttons instead of on the page.
 
 ## Security
 
@@ -75,6 +75,7 @@ Browser ── Firebase: hostDesk, uploadJobs, uploadFiles ── host bridge �
 - Publishing the rules and giving presenters the reviewer role: [docs/FIREBASE_GO_LIVE.md](docs/FIREBASE_GO_LIVE.md).
 - Settings and source paths: `.env.example`.
 - To review the header island and the upload flow without Firebase: `VITE_DEMO_MODE=true VITE_HOST_PREVIEW=true npm run dev` (development only).
+- To test signed-in flows against the real rules without touching the live project: start the Firebase Auth and Realtime Database emulators (ports 9099 and 9000), load `firebase/database.rules.json` into the `acurion-2bd21-default-rtdb` namespace, then `VITE_FIREBASE_EMULATORS=true npm run dev` (development only; production builds ignore it).
 
 ## Build and test
 

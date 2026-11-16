@@ -58,19 +58,19 @@ export const canPause = status => status.connection === 'online' && status.k7.st
 
 // One plain sentence per state, shared by the Overview card and the header island.
 export function describeK7(status) {
-  if (status.connection === 'signed-out') return 'K7 runs on the team’s Acurion host. Its live alerts reach every signed-in investigator.';
-  if (status.connection === 'loading') return 'Checking the Acurion host…';
-  if (status.connection === 'never') return 'The Acurion host has not connected yet. Start the bridge on the host computer.';
-  if (status.connection === 'stale') return `The Acurion host is offline${status.lastSeen ? `. Last seen ${relativeTime(status.lastSeen, Date.now())}` : ''}.`;
+  if (status.connection === 'signed-out') return 'Sign in to watch K7 check payments live. Its alerts reach every signed-in investigator.';
+  if (status.connection === 'loading') return 'Checking the Acurion computer…';
+  if (status.connection === 'never') return 'The Acurion computer has not connected yet.';
+  if (status.connection === 'stale') return `The Acurion computer is offline${status.lastSeen ? `. Last seen ${relativeTime(status.lastSeen, Date.now())}` : ''}.`;
   const k7 = status.k7;
   return ({
-    'getting ready': 'K7 is loading two weeks of payment history. This takes 1 to 6 minutes.',
-    ready: 'Waiting for Start. K7 then streams the recorded payments and checks each one as it arrives.',
+    'getting ready': 'Loading two weeks of payment history. This takes 1 to 6 minutes.',
+    ready: 'Ready. Press Start to check payments as they arrive.',
     running: 'Checking payments as they arrive.',
-    paused: 'Start carries on from the payment where it stopped.',
-    finished: 'The recording has played through. The host team rebuilds K7’s store to run it again.',
-    failed: k7.problem || 'K7 stopped with a problem on the host.',
-    offline: k7.problem || 'K7 is not running on the host.',
+    paused: 'Paused. Start carries on from the same payment.',
+    finished: 'Finished. The recording has played through.',
+    failed: k7.problem || 'K7 stopped with a problem on the Acurion computer.',
+    offline: k7.problem || 'K7 is not running on the Acurion computer.',
   })[k7.state];
 }
 

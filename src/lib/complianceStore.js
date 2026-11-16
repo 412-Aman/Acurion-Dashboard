@@ -4,6 +4,7 @@
 // event and is then encrypted (AES-GCM) before it is stored: on this device in the demo
 // workspace, or as one encrypted team record in Firebase in the live workspace.
 // Outside the browser (unit tests) it falls back to plain synchronous storage.
+import { payloadUpdate } from './workspaceSync.js';
 import { seedCompliance } from '../data/complianceData.js';
 import { defaultPolicy } from './amlEngine.js';
 import { appendEvent } from './auditChain.js';
@@ -53,7 +54,7 @@ function persist(state) {
   return queue;
 }
 
-export function workspaceInfo() { return { open: Boolean(current), encrypted: Boolean(backend?.encrypted), label: backend?.label || 'Not opened', actor, location: backend?.location || 'none' }; }
+export function workspaceInfo() { return { open: Boolean(current), encrypted: Boolean(backend?.encrypted), label: backend?.label || 'Not opened', actor, location: backend?.location || 'none', readOnly: backend?.readOnly || '', readOnlyTitle: backend?.readOnlyTitle || '' }; }
 export function onWorkspaceStatus(listener) { listeners.add(listener); return () => listeners.delete(listener); }
 export function flushWorkspace() { return queue; }
 
@@ -104,6 +105,11 @@ async function openLocal() {
 async function openTeam(user) {
   const [{ db }, { ref, get, set, runTransaction }, { DATA_PATHS, TEAM_ID }] = await Promise.all([import('./firebase.js'), import('firebase/database'), import('./config.js')]);
   const base = `${DATA_PATHS.cases}/${TEAM_ID}`;
+  const existing = (await get(ref(db, `${base}/vault`))).val();
+  if (!existing) {
+    const role = (await get(ref(db, `roles/${user.uid}`)).catch(() => null))?.val();
+    if (!['reviewer', 'admin'].includes(role)) throw Object.assign(new Error('The team workspace is not set up yet.'), { code: 'workspace/not-set-up' });
+  }
   const { key, vault } = await unlock({
     scope: `team:${TEAM_ID}:${user.uid}`, scopeLabel: 'Team case workspace', canReset: false,
     readConfig: async () => (await get(ref(db, `${base}/vault`))).val(),
@@ -117,10 +123,7 @@ async function openTeam(user) {
     encrypted: true, location: 'firebase', label: 'Encrypted team workspace (Firebase)',
     write: async value => {
       const sealed = await vault.encryptJSON(key, value);
-      const result = await runTransaction(ref(db, `${base}/payload`), remote => {
-        if ((remote?.version || 0) !== version) return undefined; // a teammate saved first
-        return { ...sealed, version: version + 1, updatedAt: new Date().toISOString(), updatedBy: user.uid };
-      }, { applyLocally: false });
+      const result = await runTransaction(ref(db, `${base}/payload`), payloadUpdate(version, sealed, user.uid), { applyLocally: false });
       if (!result.committed) throw Object.assign(new Error('A teammate saved the workspace first. Reload to see their changes, then repeat your last action.'), { code: 'workspace/conflict' });
       version = result.snapshot.val().version;
     },
@@ -138,12 +141,23 @@ export async function openWorkspace() {
   if (!user || !user.emailVerified) { current = normalize(seedCompliance()); backend = { encrypted: false, location: 'none', label: 'Sign in to open the team workspace', write: async () => { throw Object.assign(new Error('Sign in to save to the team case workspace.'), { code: 'auth/session-required' }); } }; return; }
   try { await openTeam(user); }
   catch (error) {
-    if (!/permission|denied/i.test(`${error.code} ${error.message}`)) throw error;
-    // Accounts without a team role still get an encrypted workspace on their own device.
-    await openLocal();
+    const reason = error.code === 'workspace/not-set-up' ? 'not-set-up' : /permission|denied/i.test(`${error.code} ${error.message}`) ? 'read-only' : '';
+    if (!reason) throw error;
+    // No private stand-in workspace on this device (it looked shared but was not): an empty, read-only one that
+    // says why, so nothing is kept where the team cannot see it.
+    const message = reason === 'not-set-up'
+      ? 'A reviewer or admin opens Cases first to choose the team passphrase. Then everyone can work on cases here.'
+      : 'Your account is read-only. Ask an admin for the analyst role to work on cases.';
+    current = normalize(emptyWorkspace());
     actor = user.email || user.uid;
-    backend.label = 'Encrypted on this device (team workspace needs an analyst role)';
+    backend = { encrypted: false, location: 'none', label: reason === 'not-set-up' ? 'Team workspace not set up yet' : 'Read-only: cases need the analyst role', readOnly: message, readOnlyTitle: reason === 'not-set-up' ? 'Cases are not set up yet.' : 'Cases are read-only for you.', write: async () => { throw Object.assign(new Error(message), { code: `workspace/${reason}` }); } };
   }
+}
+
+// The workspace's shape with no records, for accounts that cannot open the team workspace.
+function emptyWorkspace() {
+  const seed = seedCompliance();
+  return { ...seed, customers: [], counterparties: [], transactions: [], watchlist: [], findings: [], assessments: [], cases: [], documents: [], audit: [], riskHistory: [], runs: [] };
 }
 
 if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined' && !globalThis.__ACURION_NO_WORKSPACE__) {

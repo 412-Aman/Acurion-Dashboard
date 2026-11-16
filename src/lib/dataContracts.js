@@ -69,10 +69,10 @@ export function normalizeAuditLog(key, data) {
 }
 export function validateReview(review) {
   const errors = [];
-  if (!['open','assigned','investigating','escalated','closed'].includes(review.status)) errors.push('Choose a valid review stage.');
-  if (!String(review.note || '').trim() || review.note.trim().length < 10) errors.push('Record a review rationale of at least 10 characters.');
-  if (review.status !== 'open' && !String(review.owner || '').trim()) errors.push('Assign an investigator before changing the review stage.');
-  if (review.status === 'closed' && !['no_further_action','escalated_to_case'].includes(review.disposition)) errors.push('Choose a disposition before closing the alert.');
+  if (!['open','assigned','investigating','escalated','closed'].includes(review.status)) errors.push('Choose a decision.');
+  if (!String(review.note || '').trim() || review.note.trim().length < 10) errors.push('Write a note of at least 10 characters.');
+  if (review.status !== 'open' && !String(review.owner || '').trim()) errors.push('Add the investigator’s name.');
+  if (review.status === 'closed' && !['no_further_action','escalated_to_case'].includes(review.disposition)) errors.push('Choose an outcome before closing the alert.');
   return errors;
 }
 // The alert fields one review writes. "Review ongoing" has no disposition: it is sent as null (Firebase
@@ -86,4 +86,13 @@ export function compareAlertPriority(a,b) {
   const rank = {critical:4,high:3,medium:2,low:1,unknown:0};
   return closed(a)-closed(b) || (rank[b.severity]||0)-(rank[a.severity]||0)
     || (Date.parse(b.timestamp)||0)-(Date.parse(a.timestamp)||0);
+}
+// Where a writer keeps an alert's payments: K7 under the alert's own key ("k7-h0000123-0", "-1", …), an upload
+// under its job ("up-<job>-t0000", …). A key-range read finds such a payment outside the loaded sample, with no
+// database index needed.
+export function transactionKeyRange(alertKey) {
+  const key=String(alertKey||'');
+  if(/^k7-[^/]+$/.test(key))return [`${key}-`,`${key}-\uf8ff`];
+  const upload=key.match(/^(up-.+)-a\d+$/);
+  return upload?[`${upload[1]}-t`,`${upload[1]}-t\uf8ff`]:null;
 }

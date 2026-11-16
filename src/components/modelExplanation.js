@@ -12,7 +12,11 @@ export function describeFeature({ feature, encodedValue }) {
   return { label, value: encodedValue == null || !Number.isFinite(v) ? '' : v.toLocaleString('en-GB', { maximumFractionDigits: 2 }) };
 }
 
-export function contributionChart(explanation, { model = 'model' } = {}) {
+export const contributionNote = (explanation, model = 'model') => model === 'k7'
+  ? 'K7 averages its three trained models. Bars show how much each reason raised (orange) or lowered (grey) this alert’s score, in model log-odds. They explain the score, not intent.'
+  : `${explanation?.method || 'Tree contributions'}. Bars show how much each reason raised (orange) or lowered (grey) this alert’s score, in model log-odds. They explain the score, not intent.`;
+
+export function contributionChart(explanation, { model = 'model', note: withNote = true } = {}) {
   const features = (explanation?.topFeatures || []).filter(f => typeof f.feature === 'string' && Number.isFinite(f.impact));
   if (!features.length) return '';
   const max = Math.max(...features.map(f => Math.abs(f.impact)), 0.0001);
@@ -23,7 +27,7 @@ export function contributionChart(explanation, { model = 'model' } = {}) {
     const { label, value } = describeFeature(f);
     const width = Math.max(3, Math.round(Math.abs(f.impact) / max * 100));
     return `<div class="contribution-row" role="listitem"><div class="contribution-label"><strong>${esc(label)}</strong>${value ? `<span>${esc(value)}</span>` : ''}</div><div class="contribution-bar ${f.impact >= 0 ? 'up' : 'down'}" aria-hidden="true"><i style="width:${width}%"></i></div><span class="contribution-value">${f.impact >= 0 ? '+' : '−'}${Math.abs(f.impact).toFixed(2)}</span></div>`;
-  }).join('')}</div><p class="helper">${note}</p>`;
+  }).join('')}</div>${withNote ? `<p class="helper">${note}</p>` : ''}`;
 }
 
 const PATTERNS = {

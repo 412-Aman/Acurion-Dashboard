@@ -1,10 +1,10 @@
 // Bounded, authenticated reads. Live reads never substitute fictional records.
-import { ref, get, query as dbQuery, limitToLast, onValue, update, push } from 'firebase/database';
+import { ref, get, query as dbQuery, limitToLast, orderByKey, startAt, endAt, onValue, update, push } from 'firebase/database';
 import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { auth, db, fs, requireSession } from './firebase.js';
 import { DEMO_MODE, DATA_PATHS, READ_LIMIT, LEGACY_FIRESTORE_AUDIT } from './config.js';
 import { readAuditSources } from './auditSources.js';
-import { normalizeAlert, normalizeTransaction, normalizeAuditLog, validateReview, reviewPatch, isoTimestamp, finiteNumber } from './dataContracts.js';
+import { normalizeAlert, normalizeTransaction, normalizeAuditLog, validateReview, reviewPatch, transactionKeyRange, isoTimestamp, finiteNumber } from './dataContracts.js';
 import { setDataStatus, withTimeout, dataErrorCode } from './dataStatus.js';
 import { loadWorkspace, saveWorkspace } from './complianceStore.js';
 import { assessTransaction } from './amlEngine.js';
@@ -44,7 +44,9 @@ export function getAlerts() {
       const state=loadWorkspace(),saved=state.alertReviews;
       const ruleAlerts=workspaceAssessments(state).filter(a=>a.decision!=='pass').map(a=>({id:`RULE-${a.transactionId}`,transactionId:a.transactionId,suspiciousAccount:a.customerId||state.transactions.find(t=>t.id===a.transactionId)?.fromAccount||'Not supplied',riskScore:null,ruleScore:a.score,evidenceTransactionIds:a.evidenceTransactionIds||[],ruleAssessment:a,decision:a.decision,severity:a.decision==='block'?'critical':a.score>=60?'high':'medium',status:'open',timestamp:state.transactions.find(t=>t.id===a.transactionId)?.timestamp||null,reason:a.reasons.map(r=>r.message).join('; '),sourceDataset:'Workspace rules engine',policyVersion:a.policyVersion,ruleIds:a.reasons.map(r=>r.code),modelVersion:'',shapExplanation:null,gnnExplanation:null}));
       // The demo has no model run: Acurion K7's alerts and dataset uploads need a signed-in workspace.
-      return [...ruleAlerts.map(a=>({...a,firebaseKey:a.id,owner:'',disposition:'',analystNote:''}))].map(a=>({...a,...saved.reviews[a.id]}));
+      // The dev-only host preview adds a K7 and an upload alert (never in production builds).
+      const preview=import.meta.env.DEV&&import.meta.env.VITE_HOST_PREVIEW==='true'?(await import('./hostPreview.js')).previewAlerts().map(({key,data})=>normalizeAlert(key,data)):[];
+      return [...ruleAlerts.map(a=>({...a,firebaseKey:a.id,owner:'',disposition:'',analystNote:''})),...preview].map(a=>({...a,...saved.reviews[a.id]}));
     }
     return entries(await readPath(DATA_PATHS.alerts)).map(([key,data])=>normalizeAlert(key,data));
   });
@@ -145,12 +147,18 @@ export function getNetworkReviews() {
     return entries(await readPath(DATA_PATHS.networkReviews)).map(([key,data])=>({...data,networkId:data.networkId||key})).sort((a,b)=>(b.risk??0)-(a.risk??0));
   });
 }
-// Look one transaction up directly when it is outside the bounded sample.
-export async function getTransactionById(id) {
+// Look one transaction up when it is outside the bounded sample: by its own key, then (for K7 and upload alerts)
+// among the payments stored with the alert that references it.
+export async function getTransactionById(id, { alertKey } = {}) {
   const loaded=(await getTransactions()).find(tx=>tx.id===id);
   if(loaded||DEMO_MODE||!id)return loaded||null;
-  const data=await readPath(`${DATA_PATHS.transactions}/${id}`,false);
-  return data?normalizeTransaction(id,data):null;
+  if(!/[.#$[\]/]/.test(id)){const data=await readPath(`${DATA_PATHS.transactions}/${id}`,false);if(data)return normalizeTransaction(id,data);}
+  const range=transactionKeyRange(alertKey);
+  if(!range)return null;
+  await withTimeout(requireSession());
+  const snapshot=await withTimeout(get(dbQuery(ref(db,DATA_PATHS.transactions),orderByKey(),startAt(range[0]),endAt(range[1]))));
+  for(const [key,value] of Object.entries(snapshot.val()||{})){const tx=normalizeTransaction(key,value);if(tx.id===id)return tx;}
+  return null;
 }
 export async function saveAlertReview(alert, review) {
   const errors=validateReview(review);if(errors.length)throw Object.assign(new Error(errors.join(' ')),{code:'data/invalid-review'});

@@ -4,8 +4,8 @@
 // Import { auth, db, fs } from here - never call initializeApp more than once.
 
 import { initializeApp } from 'firebase/app';
-import { getAuth }        from 'firebase/auth';
-import { getDatabase }    from 'firebase/database';
+import { getAuth, connectAuthEmulator } from 'firebase/auth';
+import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
 import { getFirestore }   from 'firebase/firestore';
 import { authSettings,requiresEmailVerification } from './authPolicy.js';
 export const firebaseConfig = {
@@ -32,6 +32,13 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db   = getDatabase(app);   // Realtime Database
 export const fs   = getFirestore(app);  // Firestore
+
+// Local test runs only (VITE_FIREBASE_EMULATORS=true with `npm run dev`): use the Auth and Realtime Database
+// emulators instead of the real project. Written out in full so production builds drop it.
+if (import.meta.env.DEV && import.meta.env.VITE_FIREBASE_EMULATORS === 'true') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectDatabaseEmulator(db, '127.0.0.1', 9000);
+}
 
 // Resolve restored authentication before protected database reads.
 export async function requireSession() {

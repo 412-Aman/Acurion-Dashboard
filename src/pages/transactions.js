@@ -36,7 +36,7 @@ async function init(){
   if(results[0].status==='rejected'){loadFailed=true;renderLoadError(document.getElementById('tx-results'),results[0].reason,()=>{clearDataCache();init();});return;}
   allTx=results[0].value;alertsFailed=results[1].status!=='fulfilled';alerts=alertsFailed?[]:results[1].value;
   document.getElementById('currency-filter').innerHTML='<option value="">All currencies</option>'+[...new Set(allTx.map(t=>t.currency).filter(Boolean))].sort().map(currency=>`<option>${esc(currency)}</option>`).join('');renderRows();
-  const id=params.get('transaction');if(id){const tx=allTx.find(t=>t.id===id)||await getTransactionById(id).catch(()=>null);if(tx)openTransaction(tx);else {const c=document.getElementById('tx-context');c.textContent='That transaction could not be found in the workspace data.';c.hidden=false;}}
+  const id=params.get('transaction');if(id){const tx=allTx.find(t=>t.id===id)||await getTransactionById(id,{alertKey:params.get('from')}).catch(()=>null);if(tx)openTransaction(tx);else {const c=document.getElementById('tx-context');c.textContent='That transaction could not be found in the workspace data.';c.hidden=false;}}
 }
 for(const id of ['search','decision-filter','currency-filter','sort'])document.getElementById(id).addEventListener(id==='search'?'input':'change',renderRows);
 document.getElementById('reset-filters').onclick=()=>{for(const id of ['search','decision-filter','currency-filter'])document.getElementById(id).value='';document.getElementById('sort').value='time-desc';accountFilter='';history.replaceState(null,'','transactions.html');renderRows();};init();

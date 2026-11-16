@@ -114,14 +114,14 @@ The recording holds about 30 minutes of payments and cannot be rewound. Only rev
 1. Start K7 and wait for `ready` (1 to 6 minutes). Then start the batch API, the worker and the bridge.
 2. On another laptop, sign up with a new account and verify the email. The account sees the alerts but has no Start button.
 3. Sign in as a reviewer, in Chrome and in Safari:
-   - The K7 capsule in the header shows **Ready**.
+   - The K7 pill in the header shows **Ready**.
    - Open it and press **Start**. Progress moves within a few seconds.
-   - The first alert opens the capsule as a notification within about a minute.
+   - The first alert pops the pill open as a notification within about a minute.
    - Open the alert: K7's reasons are drawn as bars.
 4. Upload a CSV with **Upload dataset**:
-   - After it is sent, the dialog shows **Confirm the columns**: every field with the matched column, dropdowns to change them, and a date-order choice when the dates could be read both ways. The header capsule also asks for it if the window was closed.
-   - Press **Confirm and analyse**. The dialog moves to Analysing, then Results.
+   - The upload grows out of the header pill. After the file is sent, it shows **Check the columns**: every field with the matched column, dropdowns to change them, and a date-order choice when the dates could be read both ways. The header capsule also asks for it if the window was closed.
+   - Press **Looks right, scan it**. The panel moves to Scanning, then Results. You can close it meanwhile; the pill keeps the progress and calls you back.
    - **Open N alerts** shows only that file's alerts.
    - **View networks** shows its networks.
-   - Try a file with unusual headers (for example `Acct Holder`, `Counterparty Acct`, `Amt GBP`, `Booked`): the review marks the guesses "Best guess, please check" and will not continue until every required field has a column.
-5. Press **Pause**, then stop the bridge. Within 15 seconds the capsule disappears and System status shows the host as offline.
+   - Try a file with unusual headers (for example `Acct Holder`, `Counterparty Acct`, `Amt GBP`, `Booked`): the review marks the guesses orange ("Our best guess, please check") and will not continue until every required field has a column.
+5. Press **Pause**, then stop the bridge. Within 15 seconds the pill disappears and System status shows the host as offline.
