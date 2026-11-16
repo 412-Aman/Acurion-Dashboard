@@ -13,6 +13,7 @@ import { icon, escapeHTML as esc } from './icons.js';
 import { installRecordMenu } from './recordMenu.js';
 import { installTooltips } from './tooltip.js';
 import { installInfoPops } from './infoPop.js';
+import { notify, tipOnce } from '../lib/notify.js';
 import { installRowLinks } from './rowLinks.js';
 import { workspaceInfo, lockWorkspace } from '../lib/complianceStore.js';
 import { getMyRole } from '../lib/dataService.js';
@@ -51,7 +52,8 @@ export function renderLayout({active,pageTitle,pageSubtitle,actions=''}) {
   document.getElementById('signout-btn').onclick=async()=>{try{await lockWorkspace();exitDemo();if(!DEMO_MODE)await signOut(auth);navigateSmoothly(ENV_DEMO?'login.html?exit=1':'login.html');}catch{const notice=document.getElementById('data-connection-notice');notice.hidden=false;notice.textContent='Sign-out could not be completed. Check your connection, then try Sign out again.';}};
   let latestSourceStatus=[],transport=DEMO_MODE?undefined:null;
   const updateConnection=()=>{const status=connectionState(latestSourceStatus,{demo:DEMO_MODE,online:navigator.onLine,transport});const indicator=document.querySelector('.header-data-status');indicator.dataset.state=status.state;indicator.dataset.tooltip=status.detail;document.getElementById('nav-data-status').textContent=status.label;};
-  window.addEventListener('online',updateConnection);window.addEventListener('offline',updateConnection);
+  window.addEventListener('online',()=>{updateConnection();notify({tone:'ok',title:'Back online',detail:'You can save again.'});});
+  window.addEventListener('offline',()=>{updateConnection();notify({tone:'warn',title:'You’re offline',detail:'Changes can’t be saved until you reconnect.',sticky:true});});
   let stopTransport;
   const watchTransport=()=>{if(!DEMO_MODE&&!stopTransport)stopTransport=onValue(ref(db,'.info/connected'),snapshot=>{transport=snapshot.val()===true;updateConnection();},()=>{transport=false;updateConnection();});};
   window.addEventListener('pagehide',()=>{stopTransport?.();stopTransport=undefined;});
@@ -95,8 +97,13 @@ export function renderLayout({active,pageTitle,pageSubtitle,actions=''}) {
   const maskButton=document.getElementById('mask-pii');
   const applyMask=on=>{document.documentElement.classList.toggle('mask-pii',on);maskButton.setAttribute('aria-checked',String(on));maskButton.classList.toggle('is-on',on);try{sessionStorage.setItem('acurion:mask-pii',on?'1':'0');}catch{}};
   try{applyMask(sessionStorage.getItem('acurion:mask-pii')==='1');}catch{}
-  maskButton.onclick=()=>applyMask(!document.documentElement.classList.contains('mask-pii'));
+  maskButton.onclick=()=>{const on=!document.documentElement.classList.contains('mask-pii');applyMask(on);accountMenu.hidden=true;notify(on?{tone:'info',title:'Personal data hidden',detail:'Names and account numbers are blurred for screen sharing.'}:{tone:'info',title:'Personal data shown'});};
   document.addEventListener('acurion:workspace-status',event=>{const status=event.detail,notice=document.getElementById('data-connection-notice');if(status.state==='error'){notice.hidden=false;notice.innerHTML=`<div><strong>Changes were not saved</strong><span>${esc(status.message)}</span></div>${status.code==='workspace/conflict'?'<button class="text-button" data-reload>Reload</button>':''}`;notice.querySelector('[data-reload]')?.addEventListener('click',()=>location.reload());}else if(status.state==='saved'&&notice.textContent.includes('Changes were not saved'))notice.hidden=true;});
   installRecordMenu(document.getElementById('page-content'));
+  // First visit to each page: one short tip in the pill.
+  const TIPS={'index.html':'Start here. The three tiles show what needs you today.','alerts.html':'Open any alert to see why it was flagged, then pick a decision.','transactions.html':'Click a payment to see who sent it, who got it and its risk.','graph.html':'Click an account to see its links. Scroll to zoom, drag to move.','reports.html':'Reports are signed, so anyone can check they were not changed.','system.html':'Green means connected. Check connection tests everything again.','compliance.html?view=customers':'Click a customer to see their risk and checks.','compliance.html?view=screening':'Press Screen everyone to check every customer against the watchlist.','compliance.html?view=monitoring':'Run monitoring to score every payment with the rules.','compliance.html?view=cases':'Open a case to write it up and export a signed report.','compliance.html?view=controls':'Policies set the limits the rules use in this workspace.'};
+  const tipFor=()=>active==='compliance.html'?`compliance.html?view=${view}`:active;
+  if(TIPS[tipFor()])tipOnce(tipFor(),TIPS[tipFor()]);
+  document.addEventListener('acurion:workspace-view',()=>{if(TIPS[tipFor()])tipOnce(tipFor(),TIPS[tipFor()],{delay:600});});
   return document.getElementById('page-content');
 }

@@ -9,6 +9,7 @@ import { loadWorkspace } from '../lib/complianceStore.js';
 import { customerRisk } from '../lib/amlEngine.js';
 import { formatDateTime, formatRisk, severityBadgeClass } from '../lib/utils.js';
 import { riskMeter } from '../components/visuals.js';
+import { countUp } from '../lib/countUp.js';
 import { infoButton } from '../components/infoPop.js';
 import { DEMO_MODE } from '../lib/config.js';
 import { renderLoadError, renderLoading } from '../components/dataFeedback.js';
@@ -30,10 +31,12 @@ async function region(id,loader,renderer) {
 }
 const renderPriority=(element,alerts)=>{
   const pending=alerts.filter(a=>!['closed','resolved'].includes(a.status)).sort(compareAlertPriority);
-  const count=document.getElementById('ov-alerts');if(count)count.textContent=pending.length.toLocaleString('en-GB');
+  countUp(document.getElementById('ov-alerts'),pending.length);
   element.innerHTML=pending.length?`<div class="priority-list">${pending.slice(0,5).map(a=>`<a class="priority-row" data-severity="${esc(a.severity)}" href="alerts.html?alert=${encodeURIComponent(a.id)}"><div><strong>${esc(a.id)}</strong><small><span class="pii">${esc(a.suspiciousAccount)}</span> · ${formatDateTime(a.timestamp)}</small></div>${riskMeter(a)}<span class="${severityBadgeClass(a.severity)}">${esc(a.severity)}</span></a>`).join('')}</div>`:'<div class="data-empty is-clear"><strong>All clear</strong><p>No open alerts right now.</p></div>';
 };
-const renderStats=(element,stats)=>{element.innerHTML=[['totalTransactions24h','Payments','transactions.html','transactions',false],['totalAlerts','Alerts','alerts.html','alerts',false],['openAlerts','To review','alerts.html','alerts',true],['blockedTransactions','Block recommended','transactions.html?decision=block','shield',false]].map(([key,label,href,name,emphasis])=>`<a class="stat-tile" href="${href}"${emphasis&&stats[key]>0?' data-emphasis':''}><div class="stat-tile-top"><span class="stat-tile-icon">${icon(name,16)}</span><span class="stat-tile-label">${label}</span></div><strong class="stat-tile-value">${stats[key].toLocaleString('en-GB')}</strong><span class="stat-tile-go" aria-hidden="true">${icon('arrow',16)}</span></a>`).join('');};
+// Live updates count on from the previous numbers, not from zero.
+let lastStats={};
+const renderStats=(element,stats)=>{element.innerHTML=[['totalTransactions24h','Payments','transactions.html','transactions',false],['totalAlerts','Alerts','alerts.html','alerts',false],['openAlerts','To review','alerts.html','alerts',true],['blockedTransactions','Block recommended','transactions.html?decision=block','shield',false]].map(([key,label,href,name,emphasis])=>`<a class="stat-tile" href="${href}"${emphasis&&stats[key]>0?' data-emphasis':''}><div class="stat-tile-top"><span class="stat-tile-icon">${icon(name,16)}</span><span class="stat-tile-label">${label}</span></div><strong class="stat-tile-value" data-count="${lastStats[key]??0}" data-count-to="${stats[key]}">${(lastStats[key]??0).toLocaleString('en-GB')}</strong><span class="stat-tile-go" aria-hidden="true">${icon('arrow',16)}</span></a>`).join('');element.querySelectorAll('[data-count-to]').forEach(node=>countUp(node,Number(node.dataset.countTo)));lastStats={...stats};};
 region('stat-cards',getOverviewStats,renderStats);
 region('priority-alerts',getAlerts,renderPriority);
 // Live: the queue and counts follow new alerts and reviews without a reload (the listener holds the records).
@@ -43,7 +46,7 @@ try{
   const state=loadWorkspace(),now=Date.now();
   const due=state.customers.filter(c=>!c.reviewedAt||Date.parse(c.reviewedAt)+state.policy.reviewDays*86400000<now);
   const pending=state.findings.filter(f=>f.disposition==='pending').length, high=state.customers.filter(c=>customerRisk(c,state.assessments,state.findings).score>=60).length;
-  const cases=document.getElementById('ov-cases');if(cases)cases.textContent=state.cases.filter(c=>c.status!=='closed').length.toLocaleString('en-GB');
+  countUp(document.getElementById('ov-cases'),state.cases.filter(c=>c.status!=='closed').length);
   document.getElementById('review-tasks').innerHTML=[['compliance.html?view=customers',due.length,'Customer checks due','customers'],['compliance.html?view=screening',pending,'Watchlist matches to resolve','screening'],['compliance.html?view=customers',high,'High-risk customers','shield'],['compliance.html?view=cases',state.cases.filter(c=>c.status==='ready').length,'Cases ready for sign-off','cases']].map(([href,count,label,name])=>`<a class="task-row" href="${href}" data-has-items="${count>0}"><span class="task-row-label"><span class="task-row-icon">${icon(name,16)}</span>${label}</span><strong>${count>0?count:icon('check',15)}</strong></a>`).join('');
 }catch(error){renderLoadError(document.getElementById('review-tasks'),error,()=>location.reload());}
 // Shown only when the loaded payments carry model scores; otherwise there is nothing to draw.

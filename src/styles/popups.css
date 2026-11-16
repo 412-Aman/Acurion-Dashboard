@@ -204,3 +204,8 @@ button.island-notice { border:0; background:none; color:inherit; font:inherit; t
 /* A notice raised while a modal is open floats in the top layer above it, at the pill's place. */
 .island-float { position:fixed; inset:14px auto auto 50%; translate:-50% 0; margin:0; padding:0; border:0; overflow:hidden; background:#060606; color:#ededed; border-radius:26px; box-shadow:0 0 0 1px rgb(255 255 255 / .1), inset 0 1px 0 rgb(255 255 255 / .05), 0 24px 60px -14px rgb(0 0 0 / .9); }
 .island-float .island-notice { color:#ededed; }
+
+/* "Working…" pills spin; tips glow with the accent ring. */
+.island-notice[data-tone=busy] .island-notice-mark { background:transparent; border:2px solid #3a3a3a; border-top-color:var(--color-accent); box-shadow:none; animation:island-spin 800ms linear infinite; }
+.island-notice[data-tone=tip] .island-notice-mark { background:transparent; border:2px solid var(--color-accent); box-shadow:0 0 12px rgb(255 107 53 / .55); }
+@media (prefers-reduced-motion:reduce) { .island-notice[data-tone=busy] .island-notice-mark { animation:none; border-color:var(--color-accent); } }

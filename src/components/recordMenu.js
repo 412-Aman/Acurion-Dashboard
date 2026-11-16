@@ -1,4 +1,5 @@
 import { icon, escapeHTML as esc } from './icons.js';
+import { notify } from '../lib/notify.js';
 // Workly's contextual record actions, limited to actions supported by Acurion.
 export function installRecordMenu(container) {
   const menu = document.createElement('div'); menu.className = 'record-menu menu-surface'; menu.hidden = true; menu.setAttribute('role','menu'); menu.setAttribute('aria-label','Record actions'); document.body.append(menu);
@@ -13,7 +14,7 @@ export function installRecordMenu(container) {
     menu.innerHTML = `<div class="menu-label">${esc(recordId)}</div><button role="menuitem" id="record-open">${icon('reports')}Open record</button><button role="menuitem" id="record-copy">${icon('transactions')}Copy record ID</button>`;
     menu.hidden=false; menu.style.left=`${Math.min(event.clientX,innerWidth-224)}px`; menu.style.top=`${Math.min(event.clientY,innerHeight-130)}px`;
     menu.querySelector('#record-open').onclick = () => { close(); action.click(); };
-    menu.querySelector('#record-copy').onclick = async () => { try { await navigator.clipboard.writeText(recordId); menu.querySelector('#record-copy').textContent='Copied'; } catch { menu.querySelector('#record-copy').textContent='Copy unavailable in this browser'; } };
+    menu.querySelector('#record-copy').onclick = async () => { try { await navigator.clipboard.writeText(recordId); menu.querySelector('#record-copy').textContent='Copied'; close(); notify({ tone: 'ok', title: 'Copied', detail: recordId }); } catch { menu.querySelector('#record-copy').textContent='Copy unavailable in this browser'; } };
     menu.querySelector('button').focus();
   });
   document.addEventListener('pointerdown', event => { if (!menu.contains(event.target)) close(); });

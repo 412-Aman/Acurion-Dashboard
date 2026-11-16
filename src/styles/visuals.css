@@ -174,3 +174,51 @@
   .risk-cell { gap:8px; }
 }
 @media (prefers-reduced-motion:reduce) { .live-orb[data-state=running]::after, .live-orb[data-state="getting ready"] { animation:none; } }
+
+/* System status: a board anyone can read, then the technical detail folded away */
+.status-board { --tone:#8a8a8a; padding:24px 26px; border:1px solid var(--color-border); border-radius:20px; background:radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--tone) 10%, transparent), transparent 55%), var(--color-surface); }
+.status-board[data-tone=ok] { --tone:var(--color-ok); }
+.status-board[data-tone=warn] { --tone:var(--color-warn); }
+.status-board[data-tone=crit] { --tone:var(--color-crit); }
+.status-headline { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.status-headline > div { flex:1; min-width:220px; }
+.status-headline h2 { margin:0; font-size:24px; font-weight:550; letter-spacing:-.025em; }
+.status-headline p { margin:4px 0 0; color:var(--color-text-dim); font-size:14px; }
+.status-headline-orb { width:18px; height:18px; flex-shrink:0; border-radius:50%; background:var(--tone); box-shadow:0 0 0 6px color-mix(in srgb, var(--tone) 18%, transparent), 0 0 22px color-mix(in srgb, var(--tone) 60%, transparent); transition:background-color 300ms ease, box-shadow 300ms ease; }
+.status-board[data-tone=neutral] .status-headline-orb { background:transparent; border:2px solid #4a4a4a; border-top-color:var(--color-accent); box-shadow:none; animation:island-spin 900ms linear infinite; }
+.status-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.status-tiles { display:grid; grid-template-columns:repeat(5, minmax(0, 1fr)); gap:10px; margin-top:22px; }
+.status-tile { --tone:#5a5a5a; display:flex; align-items:flex-start; gap:10px; min-width:0; padding:14px; border-radius:14px; background:var(--color-bg); border:1px solid var(--color-border); transition:border-color 300ms ease; }
+.status-tile[data-tone=ok] { --tone:var(--color-ok); }
+.status-tile[data-tone=warn] { --tone:var(--color-warn); border-color:rgb(233 165 72 / .35); }
+.status-tile[data-tone=crit] { --tone:var(--color-crit); border-color:rgb(242 107 107 / .4); }
+.status-tile > div { min-width:0; }
+.status-tile-orb { width:9px; height:9px; margin-top:5px; flex-shrink:0; border-radius:50%; background:var(--tone); box-shadow:0 0 10px color-mix(in srgb, var(--tone) 70%, transparent); }
+.status-tile-name { display:block; font-size:12px; color:var(--color-text-faint); }
+.status-tile strong { display:block; margin-top:3px; font-size:15px; font-weight:600; }
+.status-tile small { display:block; margin-top:3px; font-size:12px; line-height:1.4; color:var(--color-text-faint); overflow-wrap:anywhere; }
+.status-board #session-action { display:inline-block; margin-top:14px; }
+.tech-heading { margin:40px 0 12px; font-size:17px; font-weight:550; color:var(--color-text-dim); }
+.tech-fold { padding:0; }
+.tech-fold + .tech-fold { margin-top:10px; }
+.tech-fold > summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; cursor:pointer; list-style:none; font-weight:550; }
+.tech-fold > summary::-webkit-details-marker { display:none; }
+.tech-fold > summary svg { color:var(--color-text-faint); transition:transform 200ms var(--motion-ease); }
+.tech-fold[open] > summary svg { transform:rotate(180deg); }
+.tech-fold > summary:hover { background:var(--color-hover); border-radius:inherit; }
+.tech-fold-body { padding:0 20px 20px; }
+@media (max-width:1100px) { .status-tiles { grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+@media (max-width:640px) { .status-board { padding:18px 16px; } .status-headline h2 { font-size:20px; } .status-tiles { grid-template-columns:1fr 1fr; } .status-actions { width:100%; } .status-actions > * { flex:1; justify-content:center; } }
+@media (prefers-reduced-motion:reduce) { .status-board[data-tone=neutral] .status-headline-orb { animation:none; } }
+
+/* Explanations folded behind More info, and small title rows that carry one */
+.helper-pop { margin-top:6px; }
+.card-title-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.card-title-row h3 { margin:0; }
+.graph-filter-info { margin-top:12px; }
+.workspace-chip-row { display:flex; align-items:center; gap:8px; margin:0 0 18px; }
+.workspace-chip { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; background:rgb(60 207 142 / .1); color:#8fe6bd; font-size:12.5px; font-weight:600; }
+
+/* A count that just changed springs once and flashes the accent */
+.is-bumped { animation:count-bump 520ms cubic-bezier(.34,1.56,.64,1); }
+@keyframes count-bump { 0% { transform:scale(1); } 35% { transform:scale(1.38); background:var(--color-accent); color:#160802; } 100% { transform:scale(1); } }

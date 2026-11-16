@@ -14,7 +14,7 @@ import { onNotify } from '../lib/notify.js';
 import { onUploadRequest, beginUpload, requestUpload, subscribeUpload, uploadState, sentShare } from '../lib/uploadFlow.js';
 import { UploadPanel } from './upload-panel';
 
-type Notice = { key: string; tone: 'alert' | 'ok' | 'warn' | 'ask' | 'info'; title: string; detail?: string; note?: string; href?: string; jobId?: string };
+type Notice = { key: string; tone: 'alert' | 'ok' | 'warn' | 'ask' | 'info' | 'tip' | 'busy'; title: string; detail?: string; note?: string; href?: string; jobId?: string; sticky?: boolean };
 type Mode = 'hidden' | 'compact' | 'expanded' | 'notice' | 'upload';
 const STATE_LABEL: Record<string, string> = { 'getting ready': 'Loading', ready: 'Ready', running: 'Running', paused: 'Paused', finished: 'Finished', failed: 'Needs attention', offline: 'Offline' };
 const NOTICE_MS = 5200;
@@ -80,7 +80,8 @@ function HostIsland() {
     setNotice(next);
     window.clearTimeout(timer.current);
     const close = () => { if (hovering.current) timer.current = window.setTimeout(close, 1200); else setNotice(null); };
-    timer.current = window.setTimeout(close, NOTICE_MS);
+    // "Working…" and offline pills stay until something replaces them (with a safety limit); tips stay a little longer.
+    timer.current = window.setTimeout(close, next.sticky ? 45000 : next.tone === 'tip' ? 8000 : NOTICE_MS);
   }, []);
 
   useEffect(() => {
@@ -185,7 +186,7 @@ function HostIsland() {
 
   const noticeView = notice ? (() => {
     const inner = <><span className="island-notice-mark" aria-hidden="true" />
-      <span className="island-notice-text"><strong>{notice.title}</strong>{notice.detail ? <small>{notice.detail}</small> : null}{notice.note ? <em>{notice.note}</em> : null}</span>
+      <motion.span key={`${notice.tone}-${notice.title}`} className="island-notice-text" initial={reduced ? false : { opacity: 0, filter: 'blur(4px)' }} animate={{ opacity: 1, filter: 'blur(0px)' }} transition={{ duration: 0.22 }}><strong>{notice.title}</strong>{notice.detail ? <small>{notice.detail}</small> : null}{notice.note ? <em>{notice.note}</em> : null}</motion.span>
       {notice.href || notice.jobId ? <span className="island-notice-go">Open</span> : null}</>;
     return notice.href || notice.jobId
       ? <a className="island-notice" href={notice.href || '#'} data-tone={notice.tone} onClick={event => { setNotice(null); if (notice.jobId) { event.preventDefault(); openUpload(notice.jobId); } }}>{inner}</a>
@@ -260,7 +261,7 @@ function HostIsland() {
   return <div className="host-island-anchor" ref={root} data-mode={mode} onPointerEnter={() => { hovering.current = true; }} onPointerLeave={() => { hovering.current = false; }}>
     {scrim}{float}
     <motion.div className="host-island" data-mode={mode} initial={false}
-      animate={size ? { width: size.w, height: size.h, x: size.x, borderRadius: mode === 'compact' ? 19 : 26 } : undefined} transition={spring}>
+      animate={size ? { width: size.w, height: size.h, x: size.x, borderRadius: mode === 'compact' ? 19 : 26 } : { x: 0, borderRadius: mode === 'compact' ? 19 : 26 }} transition={spring}>
       <div className="host-island-measure" ref={measure} data-mode={mode}>
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div key={mode === 'notice' ? `notice-${notice?.key}` : mode} className="host-island-content" {...fade}>{content}</motion.div>
