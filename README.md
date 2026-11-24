@@ -100,7 +100,7 @@ npx vite preview   # serves the build with the production security headers
 | `scripts/` | UN sanctions list converter |
 | `ml_review/` | The earlier model pipeline (XGBoost and GNN), kept for reference; Acurion K7 replaced it |
 
-The interface is near-black monochrome with one signal-orange accent (`#ff6b35`) for focus, selection and your current place; red, amber and green carry risk and outcomes only.
+The interface uses institutional navy with one muted-teal accent (`#168c83`) for focus, selection and your current place. Pages sit on a soft cool grey (`#eaf0f3`) with off-white cards, so nothing is glaring; navy (`#101d2d`) carries the dock, the K7 pill, pop-ups and the Overview banner. Red (`#d94b4b`) marks high and critical risk, amber (`#d99a36`) medium risk and pending reviews, green (`#21866b`) a resolved outcome. Colour tokens live in `src/styles/tokens.css`; the logo is inline SVG in `src/components/brand.js`.
 
 ## Sanctions list import
 

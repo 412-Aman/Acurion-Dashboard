@@ -1,23 +1,25 @@
-/* Acurion tokens: the original neutral near-black workspace, with one signal-orange accent. */
+/* Acurion tokens: institutional navy with one muted-teal accent. The content area is a soft cool grey with
+   off-white cards (never pure white over large areas); navy carries the chrome: dock, K7 pill, pop-ups and the
+   Overview banner. Amber and red only mark risk, green only a resolved outcome. */
 @theme {
-  --color-bg: #151515;
-  --color-surface: #1b1b1b;
-  --color-surface-2: #232323;
-  --color-surface-3: #2c2c2c;
-  --color-border: #2a2a2a;
-  --color-border-light: #363636;
-  --color-text: #ececec;
-  --color-text-dim: #a1a1a1;
-  --color-text-faint: #8a8a8a;
-  --color-accent: #ff6b35;
-  --color-accent-dim: #ff8a5c;
-  --color-accent-muted: #3a1f14;
-  --color-violet: #b9b9b9;
-  --color-info: #c8c8c8;
-  --color-ok: #3ccf8e;
-  --color-warn: #e9a548;
-  --color-danger: #e9a548;
-  --color-crit: #f26b6b;
+  --color-bg: #eaf0f3;
+  --color-surface: #f8fafb;
+  --color-surface-2: #eff3f6;
+  --color-surface-3: #e3eaef;
+  --color-border: #dae2e8;
+  --color-border-light: #c9d4dc;
+  --color-text: #172638;
+  --color-text-dim: #586777;
+  --color-text-faint: #5e6d7d;
+  --color-accent: #168c83;
+  --color-accent-dim: #0f7068;
+  --color-accent-muted: #ddefec;
+  --color-violet: #586777;
+  --color-info: #586777;
+  --color-ok: #21866b;
+  --color-warn: #d99a36;
+  --color-danger: #d94b4b;
+  --color-crit: #d94b4b;
   --font-display: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
   --radius-card: 10px;
@@ -40,40 +42,65 @@
   --color-primary: var(--color-accent);
   --color-ring: var(--color-accent);
   --color-chart-1: var(--color-accent);
-  --color-chart-2: #ececec;
-  --color-chart-3: #8a8a8a;
+  --color-chart-2: #193149;
+  --color-chart-3: #8c9db0;
 }
 
 :root {
-  --color-hover: #202020;
-  --color-popover: #1f1f1f;
-  --on-accent: #1a0b05;
-  --primary-bg: #ececec;
-  --primary-hover: #ffffff;
-  --on-primary: #141414;
+  --color-hover: #f0f4f7;
+  --color-sunken: #f1f5f8;
+  --color-popover: #fcfdfd;
+  --input-bg: #fcfdfd;
+  --border-hover: #a9b7c3;
+  --on-accent: #ffffff;
+  --primary-bg: #14837a;
+  --primary-hover: #106f68;
+  --on-primary: #ffffff;
+  --secondary: #193149;
 
-  /* Accent and semantic tints. Colour is reserved for meaning: the accent marks focus and
-     "you are here", red/amber mark risk, green marks a clear outcome. */
-  --tint-accent: rgb(255 107 53 / .1);
-  --edge-accent: rgb(255 107 53 / .38);
-  --tint-ok: rgb(60 207 142 / .1);
-  --edge-ok: rgb(60 207 142 / .32);
-  --tint-warn: rgb(233 165 72 / .11);
-  --edge-warn: rgb(233 165 72 / .34);
-  --tint-danger: var(--tint-warn);
-  --edge-danger: var(--edge-warn);
-  --tint-crit: rgb(242 107 107 / .12);
-  --edge-crit: rgb(242 107 107 / .36);
-  --tint-neutral: rgb(255 255 255 / .05);
-  --edge-neutral: rgb(255 255 255 / .12);
+  /* Text-safe tones for small type on the light surfaces (the brand tones above are for fills and dots). */
+  --accent-ink: #0f7068;
+  --ok-ink: #1b7560;
+  --warn-ink: #8f5c12;
+  --crit-ink: #b93838;
+
+  /* Navy chrome: the dock, the K7 pill, pop-overs, tooltips and the Overview banner. */
+  --navy: #101d2d;
+  --navy-raised: #15263a;
+  --navy-2: #193149;
+  --navy-3: #22405c;
+  --navy-line: rgb(255 255 255 / .09);
+  --on-navy: #e9eff4;
+  --on-navy-dim: #a7b6c5;
+  --on-navy-faint: #8c9db0;
+  --accent-on-navy: #3fb3a8;
+  --ok-on-navy: #2fa37f;
+  --warn-on-navy: #e3a64a;
+  --crit-on-navy: #e86a6a;
+
+  /* Accent and semantic tints. Colour is reserved for meaning: teal marks focus and "you are here",
+     red/amber mark risk, green marks a resolved outcome. */
+  --tint-accent: rgb(22 140 131 / .1);
+  --edge-accent: rgb(22 140 131 / .42);
+  --tint-ok: rgb(33 134 107 / .1);
+  --edge-ok: rgb(33 134 107 / .36);
+  --tint-warn: rgb(217 154 54 / .13);
+  --edge-warn: rgb(217 154 54 / .5);
+  --tint-danger: var(--tint-crit);
+  --edge-danger: var(--edge-crit);
+  --tint-crit: rgb(217 75 75 / .09);
+  --edge-crit: rgb(217 75 75 / .4);
+  --tint-neutral: rgb(16 29 45 / .04);
+  --edge-neutral: rgb(16 29 45 / .12);
   --tint-violet: var(--tint-neutral);
   --edge-violet: var(--edge-neutral);
   --tint-info: var(--tint-neutral);
   --edge-info: var(--edge-neutral);
 
-  --shadow-card: none;
-  --shadow-menu: 0 0 0 1px rgb(255 255 255 / .08), 0 4px 8px rgb(0 0 0 / .3), 0 12px 32px rgb(0 0 0 / .4);
-  --shadow-panel: 0 0 0 1px rgb(255 255 255 / .07), 0 24px 64px rgb(0 0 0 / .55);
+  --shadow-card: 0 1px 2px rgb(16 29 45 / .04);
+  --shadow-menu: 0 0 0 1px rgb(16 29 45 / .08), 0 4px 10px rgb(16 29 45 / .07), 0 14px 34px rgb(16 29 45 / .12);
+  --shadow-panel: 0 0 0 1px rgb(16 29 45 / .06), 0 24px 64px rgb(16 29 45 / .2);
+  --shadow-navy: 0 0 0 1px rgb(255 255 255 / .07), inset 0 1px 0 rgb(255 255 255 / .05), 0 18px 44px -14px rgb(16 29 45 / .55);
 
   --space-page: clamp(20px, 3.2vw, 52px);
   --content-max: 1320px;

@@ -44,13 +44,13 @@ function draw(){
   if(!nodes.length){document.getElementById('cy').innerHTML='<div class="data-empty">No matching accounts in this sample. Reset the filters or check the data source.</div>';return;}
   document.getElementById('cy').innerHTML='';
   cy=cytoscape({container:document.getElementById('cy'),elements:[...nodes,...edges].map(data=>({data})),style:[
-    {selector:'node',style:{'background-color':'#2c2c2c','width':24,'height':24,'border-width':1.5,'border-color':'#bdbdbd','label':'data(label)','color':'#a1a1a1','font-size':10,'min-zoomed-font-size':6,'font-family':'ui-sans-serif, system-ui, sans-serif','text-valign':'bottom','text-margin-y':7,'text-outline-color':'#151515','text-outline-width':2}},
-    {selector:'node:selected',style:{'background-color':'#ff6b35','border-color':'#ffb08f','border-width':2.5,'color':'#ffffff'}},
-    {selector:'edge',style:{'width':1.6,'line-color':'#5a5a5a','curve-style':'bezier','target-arrow-shape':'triangle','target-arrow-color':'#5a5a5a','arrow-scale':.8}},
-    {selector:'edge[type ^= "shared_"]',style:{'line-style':'dashed','target-arrow-shape':'none','line-color':'#7a7a7a','opacity':.8}},
-    {selector:'edge[?flagged]',style:{'line-color':'#f26b6b','target-arrow-color':'#f26b6b','width':2.6}},
+    {selector:'node',style:{'background-color':'#fcfdfd','width':24,'height':24,'border-width':1.5,'border-color':'#6f8091','label':'data(label)','color':'#586777','font-size':10,'min-zoomed-font-size':6,'font-family':'ui-sans-serif, system-ui, sans-serif','text-valign':'bottom','text-margin-y':7,'text-outline-color':'#f1f5f8','text-outline-width':2}},
+    {selector:'node:selected',style:{'background-color':'#168c83','border-color':'#0f7068','border-width':2.5,'color':'#172638'}},
+    {selector:'edge',style:{'width':1.6,'line-color':'#a3b1bd','curve-style':'bezier','target-arrow-shape':'triangle','target-arrow-color':'#a3b1bd','arrow-scale':.8}},
+    {selector:'edge[type ^= "shared_"]',style:{'line-style':'dashed','target-arrow-shape':'none','line-color':'#b4c0ca','opacity':.9}},
+    {selector:'edge[?flagged]',style:{'line-color':'#d94b4b','target-arrow-color':'#d94b4b','width':2.6}},
     {selector:'.faded',style:{opacity:.08}},
-    {selector:'.path-evidence',style:{'line-color':'#ff6b35','target-arrow-color':'#ff6b35','width':4,'z-index':10}},
+    {selector:'.path-evidence',style:{'line-color':'#168c83','target-arrow-color':'#168c83','width':4,'z-index':10}},
   ],layout:nodes.length<=12?{name:'circle',fit:false,radius:Math.max(130,nodes.length*30),avoidOverlap:true,animate:false}:{name:'cose',animate:false,randomize:false,fit:true,padding:40,numIter:1000,idealEdgeLength:()=>nodes.length<=80?110:70,nodeRepulsion:()=>nodes.length<=80?450000:60000,gravity:.25,nodeOverlap:20},minZoom:.1,maxZoom:4});
   if(nodes.length<=12){cy.zoom(1);cy.center();}else if(cy.zoom()>1.4){cy.zoom(1.4);cy.center();}
   cy.on('tap','node',event=>inspectAccount(event.target.id()));

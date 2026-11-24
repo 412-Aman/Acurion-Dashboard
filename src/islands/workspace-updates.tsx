@@ -3,6 +3,7 @@ import ChangelogTimeline, { type ChangelogEntry } from '@/components/ui/changelo
 
 // Product notes describe shipped functionality, never customer or audit events.
 const entries: ChangelogEntry[] = [
+  {id:'navy-teal',date:'2026-11-24',category:'improved',title:'New logo and a calmer navy and teal look',summary:'Acurion has its new logo. Pages move to a soft cool grey with navy navigation and pop-ups and one muted-teal accent for focus and your current place. Red marks high and critical risk, amber medium risk and pending reviews, green a resolved outcome.'},
   {id:'model-run',date:'2026-11-13',category:'new',title:'Real model alerts with explanations',summary:'Alerts now come from the saved XGBoost and graph-model run on the IBM AML benchmark. Each alert shows why the model flagged it and the network review behind it, and the graph opens on the model-flagged networks.'},
   {id:'encryption',date:'2026-11-13',category:'new',title:'Encrypted workspace, verifiable audit and signed reports',summary:'Cases, customers and documents are encrypted with AES-256 behind a workspace passphrase. Audit events are hash-chained and can be verified, and reports are exported signed with goAML XML.'},
   {id:'signal-accents',date:'2026-11-08',category:'improved',title:'Signal-orange accents and clickable records',summary:'The monochrome workspace gains one orange accent for focus, selection and your current place. Whole rows and cards now open their record, drawers close from the backdrop, and record details open in a wider side panel.'},

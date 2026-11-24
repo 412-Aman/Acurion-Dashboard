@@ -135,7 +135,7 @@ function Review({ s }: { s: any }) {
         {count('check') ? <span data-tone="check"><Icon name="ask" size={13} />{count('check')} to check</span> : null}
         {count('needed') ? <span data-tone="needed"><Icon name="need" size={13} />{count('needed')} missing</span> : null}
       </>}
-      <Info title="Checking columns" html={`<p>Acurion matched your file’s columns to what it needs by their names. Orange ones are our best guesses. Nothing is scanned until you confirm.</p><p>${esc(n(review.rows))} rows${review.rowsEstimated ? ' (about)' : ''}, ${review.columns.length} columns.</p>${review.warnings.length ? `<ul>${review.warnings.slice(0, 3).map((w: string) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}`} />
+      <Info title="Checking columns" html={`<p>Acurion matched your file’s columns to what it needs by their names. Amber ones are our best guesses. Nothing is scanned until you confirm.</p><p>${esc(n(review.rows))} rows${review.rowsEstimated ? ' (about)' : ''}, ${review.columns.length} columns.</p>${review.warnings.length ? `<ul>${review.warnings.slice(0, 3).map((w: string) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}`} />
     </div>
     {review.message ? <p className="up-problem" role="alert">{review.message}</p> : null}
     <div className="up-maps">{core.map(f => <ColumnPicker key={f.id} s={s} field={f} />)}</div>
